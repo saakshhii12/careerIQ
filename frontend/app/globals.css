@@ -1,26 +1,147 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   CareerIQ Design Tokens
+   Dark futuristic / cyber-dashboard system. This file is the single source
+   of truth for color, radius, shadow and grid treatment. Every component
+   should consume these tokens rather than hardcoding hex values, so the
+   whole app stays visually consistent as pages are added.
+   ========================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core surfaces */
+  --color-bg: #16253f;         /* outer canvas, slightly deeper than the panel tone below it for depth */
+  --color-bg-primary: #20365d; /* primary surface tone (spec) */
+  --color-bg-secondary: #263e68; /* secondary / card surface tone (spec) */
+  --color-bg-elevated: #2c4674; /* hover / elevated state, one step up from secondary */
+
+  /* Accent */
+  --color-accent: #64d2c8;
+  --color-accent-soft: #64d2c840; /* 25% alpha, for glows and washes */
+  --color-accent-dim: #4fa89f;
+
+  /* Text */
+  --color-text: #ffffff;
+  --color-text-muted: #a9b8d1;
+  --color-text-faint: #6b7ea3;
+
+  /* Status (derived to sit naturally in the same navy/teal system) */
+  --color-success: #52e0b0;
+  --color-warning: #f0c05a;
+  --color-danger: #f2707a;
+
+  /* Structure */
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-strong: rgba(255, 255, 255, 0.14);
+
+  /* Grid overlay */
+  --grid-line: rgba(100, 210, 200, 0.06);
+  --grid-size: 44px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--color-bg);
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-accent: var(--color-accent);
+  --color-accent-dim: var(--color-accent-dim);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-faint: var(--color-text-faint);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono-tech);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Always-visible blueprint grid. Applied as a fixed background layer so it
+   reads consistently behind every page without each page reimplementing it. */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+}
+
+.bg-radial-glow {
+  background-image: radial-gradient(
+    circle at 50% -10%,
+    rgba(100, 210, 200, 0.16),
+    transparent 55%
+  );
+}
+
+/* Glassmorphism card primitive */
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(38, 62, 104, 0.55) 0%,
+    rgba(32, 54, 93, 0.45) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+.glow-border {
+  box-shadow: 0 0 0 1px var(--border-glass-strong), 0 0 24px -6px var(--color-accent-soft);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px var(--color-accent-soft);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #0b1424;
+}
+
+/* Thin, teal-tinted scrollbars fit the terminal aesthetic better than the
+   OS default. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent-dim) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-accent-dim);
+  border-radius: 999px;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
