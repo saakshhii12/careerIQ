@@ -13,6 +13,9 @@ const InterviewLayout = ({
   evaluation,
   loading,
   onNextQuestion,
+  candidateInfo,
+  completedAnswers,
+  evaluations,
 }) => {
   return (
     <div className="min-h-screen bg-[#0B1220] text-white">
@@ -40,7 +43,7 @@ const InterviewLayout = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_360px] gap-6">
 
-            <LeftPanel />
+            <LeftPanel candidateInfo={candidateInfo} />
 
             <CenterPanel
               question={question}
@@ -52,11 +55,15 @@ const InterviewLayout = ({
               onNextQuestion={onNextQuestion}
             />
 
-            <RightPanel />
+            <RightPanel evaluation={evaluation} />
 
           </div>
 
-          <BottomPanel />
+          <BottomPanel
+            currentQuestion={completedAnswers}
+            totalQuestions={totalQuestions}
+            evaluations={evaluations}
+          />
 
         </div>
 

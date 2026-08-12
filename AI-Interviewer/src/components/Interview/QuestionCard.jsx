@@ -15,6 +15,7 @@ const QuestionCard = ({
   question,
   questionNumber,
   totalQuestions,
+  onSpeechEnd,
 }) => {
   const progress =
     (questionNumber / totalQuestions) * 100;
@@ -40,20 +41,20 @@ const QuestionCard = ({
   }, [seconds]);
 
   // Speak every new question
-useEffect(() => {
-  if (!question) return;
+  useEffect(() => {
+    if (!question) return;
 
-  setIsSpeaking(true);
+    setIsSpeaking(true);
 
-  speak(question, () => {
-    setIsSpeaking(false);
+    speak(question, () => {
+      setIsSpeaking(false);
 
-    if (onSpeechEnd) {
-      onSpeechEnd();
-    }
-  });
+      if (onSpeechEnd) {
+        onSpeechEnd();
+      }
+    });
 
-}, [question]);
+  }, [question, onSpeechEnd]);
 
 const replayQuestion = () => {
   setIsSpeaking(true);

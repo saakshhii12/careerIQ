@@ -13,14 +13,16 @@ import {
 import GlassCard from "../Common/GlassCard";
 
 const Sidebar = ({
-  candidateName = "Shraddha Kokane",
-  targetRole = "Frontend Developer",
-  resumeScore = 92,
+  candidateInfo = null,
   interviewStage = "Technical Round",
   cameraStatus = "Connected",
   micStatus = "Connected",
   interviewTime = "18:45",
 }) => {
+  const candidateName = candidateInfo?.candidateName || "Not available";
+  const targetRole = candidateInfo?.targetRole || "Not available";
+  const resumeScore = "N/A";
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -62,7 +64,7 @@ const Sidebar = ({
             </div>
 
             <span className="text-teal-300 font-semibold">
-              {resumeScore}%
+              {resumeScore}
             </span>
           </div>
 

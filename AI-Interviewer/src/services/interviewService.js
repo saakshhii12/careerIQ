@@ -1,48 +1,26 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(
-  import.meta.env.VITE_GEMINI_API_KEY
-);
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
-});
+const API_URL = "http://localhost:5000";
 
 export async function generateInterviewQuestions(resumeText) {
   try {
-    const prompt = `
-You are an expert technical interviewer.
+    const response = await fetch(`${API_URL}/api/generate-questions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resume: resumeText,
+      }),
+    });
 
-Based on the following resume, generate EXACTLY 10 interview questions.
+    if (!response.ok) {
+      throw new Error(`Question Generation API returned ${response.status}`);
+    }
 
-Rules:
-- Start with an introduction question.
-- Ask technical questions related to the candidate's skills.
-- Gradually increase difficulty.
-- Return ONLY a JSON array.
-- No markdown.
-- No explanation.
+    const data = await response.json();
 
-Resume:
-
-${resumeText}
-`;
-
-    const result = await model.generateContent(prompt);
-
-    const response = await result.response;
-
-    let text = response.text().trim();
-
-    // Remove markdown if Gemini returns it
-    text = text.replace(/```json/g, "");
-    text = text.replace(/```/g, "");
-
-    const questions = JSON.parse(text);
-
-    return questions;
+    return data.questions;
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Qwen Question Generation Error:", error);
 
     return [
       "Tell me about yourself.",

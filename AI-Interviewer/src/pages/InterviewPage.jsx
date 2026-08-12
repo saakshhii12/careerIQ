@@ -8,26 +8,35 @@ const InterviewPage = () => {
   const location = useLocation();
 
   const allQuestions = location.state?.questions || [];
+  const resumeText = location.state?.resumeText || "";
+  const candidateInfo = location.state?.candidateInfo || null;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [evaluations, setEvaluations] = useState([]);
 
   const [evaluation, setEvaluation] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleAnswerSubmit = async (answer) => {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const result = await evaluateAnswer(
-      allQuestions[currentQuestionIndex],
-      answer
-    );
+      const result = await evaluateAnswer(
+        allQuestions[currentQuestionIndex],
+        answer,
+        resumeText
+      );
 
-    setLoading(false);
-
-    setEvaluation(result);
-
-    setAnswers((prev) => [...prev, answer]);
+      setEvaluation(result);
+      setAnswers((prev) => [...prev, answer]);
+      setEvaluations((prev) => [...prev, result]);
+    } catch (error) {
+      console.error("Interview evaluation failed:", error);
+      alert(error.message || "Unable to evaluate the answer right now.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNextQuestion = () => {
@@ -59,6 +68,9 @@ const InterviewPage = () => {
       evaluation={evaluation}
       loading={loading}
       onNextQuestion={handleNextQuestion}
+      candidateInfo={candidateInfo}
+      completedAnswers={answers.length}
+      evaluations={evaluations}
     />
   );
 };

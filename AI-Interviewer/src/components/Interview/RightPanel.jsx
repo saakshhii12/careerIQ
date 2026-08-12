@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 import AIAnalysis from "./AIAnalysis";
 
-const RightPanel = () => {
+const RightPanel = ({ evaluation }) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: 25 }}
@@ -11,7 +11,7 @@ const RightPanel = () => {
       transition={{ duration: 0.5 }}
       className="w-full lg:w-[360px]"
     >
-      <AIAnalysis />
+      <AIAnalysis evaluation={evaluation} />
     </motion.div>
   );
 };

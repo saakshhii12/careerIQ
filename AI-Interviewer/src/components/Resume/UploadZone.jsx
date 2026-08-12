@@ -5,6 +5,7 @@ import { UploadCloud, FileText, Sparkles } from "lucide-react";
 
 import { extractTextFromPDF } from "../../services/pdfService";
 import { generateInterviewQuestions } from "../../services/interviewService";
+import { parseResume } from "../../services/resumeService";
 
 const UploadZone = () => {
   const fileInputRef = useRef(null);
@@ -13,6 +14,8 @@ const UploadZone = () => {
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [candidateInfo, setCandidateInfo] = useState(null);
+  const [resumeText, setResumeText] = useState("");
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -28,16 +31,24 @@ const UploadZone = () => {
     setLoading(true);
 
     try {
-      const resumeText = await extractTextFromPDF(file);
+      // Step 1: Extract text from PDF
+      const extracted = await extractTextFromPDF(file);
+      setResumeText(extracted);
 
-      const aiQuestions = await generateInterviewQuestions(resumeText);
+      // Step 2: Parse resume to extract candidate info
+      const candidate = await parseResume(extracted);
+      setCandidateInfo(candidate);
+
+      // Step 3: Generate personalized questions
+      const aiQuestions = await generateInterviewQuestions(extracted);
 
       console.log("AI Questions:", aiQuestions);
+      console.log("Candidate Info:", candidate);
 
       setQuestions(aiQuestions);
     } catch (error) {
       console.error(error);
-      alert("Unable to process resume.");
+      alert(`Unable to process resume: ${error.message}`);
     }
 
     setLoading(false);
@@ -178,6 +189,8 @@ const UploadZone = () => {
                 navigate("/interview", {
                   state: {
                     questions,
+                    resumeText,
+                    candidateInfo,
                   },
                 })
               }

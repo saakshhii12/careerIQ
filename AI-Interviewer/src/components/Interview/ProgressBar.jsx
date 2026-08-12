@@ -9,11 +9,21 @@ import {
 import GlassCard from "../Common/GlassCard";
 
 const ProgressBar = ({
-  currentQuestion = 3,
+  currentQuestion = 0,
   totalQuestions = 10,
-  overallScore = 86,
+  evaluations = [],
 }) => {
   const progress = (currentQuestion / totalQuestions) * 100;
+  const numericScores = evaluations
+    .map((item) => Number(item?.score))
+    .filter((score) => Number.isFinite(score));
+  const overallScore = numericScores.length
+    ? Math.round(
+        (numericScores.reduce((sum, score) => sum + score, 0) /
+          numericScores.length) *
+          10
+      )
+    : 0;
 
   return (
     <motion.div

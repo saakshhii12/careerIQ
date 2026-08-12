@@ -24,6 +24,7 @@ const AnswerBox = ({
 }) =>  {
   const [answer, setAnswer] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingError, setRecordingError] = useState("");
 
   const recognitionRef = useRef(null);
 
@@ -36,11 +37,15 @@ const AnswerBox = ({
   };
 
   const startRecording = () => {
+    setRecordingError("");
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech Recognition is not supported in this browser.");
+      setRecordingError(
+        "Voice input is not supported in this browser. Use Chrome or Edge on localhost, or type your answer."
+      );
       return;
     }
 
@@ -70,8 +75,13 @@ const AnswerBox = ({
       setIsRecording(false);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       setIsRecording(false);
+      setRecordingError(
+        event?.error === "not-allowed"
+          ? "Microphone access was blocked. Allow mic permission for this site and try again."
+          : "Voice input could not start. Try the Record button again, or type your answer."
+      );
     };
   };
 
@@ -83,11 +93,11 @@ const AnswerBox = ({
   };
 
   useEffect(() => {
-    if(autoRecord){
-        startRecording();
-        onAutoRecordComplete();
+    if (autoRecord) {
+      startRecording();
+      onAutoRecordComplete();
     }
-}, [autoRecord]);
+  }, [autoRecord, onAutoRecordComplete]);
 
   return (
     <motion.div
@@ -231,6 +241,12 @@ const AnswerBox = ({
           </div>
 
         </div>
+
+        {recordingError && (
+          <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+            {recordingError}
+          </div>
+        )}
 
         {/* AI Feedback */}
 

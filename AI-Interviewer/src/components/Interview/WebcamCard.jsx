@@ -27,6 +27,10 @@ const WebcamCard = () => {
           <h2 className="text-2xl font-bold text-white">
             Candidate Preview
           </h2>
+
+          <p className="mt-1 text-sm text-slate-400">
+            Camera preview is enabled here. Video-based confidence scoring is not wired up yet.
+          </p>
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import Sidebar from "../Sidebar/Sidebar";
 
-const LeftPanel = () => {
+const LeftPanel = ({ candidateInfo }) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: -25 }}
@@ -10,7 +10,7 @@ const LeftPanel = () => {
       transition={{ duration: 0.4 }}
       className="w-full lg:w-[280px]"
     >
-      <Sidebar />
+      <Sidebar candidateInfo={candidateInfo} />
     </motion.div>
   );
 };
