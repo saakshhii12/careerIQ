@@ -2,7 +2,11 @@ import React from "react";
 import { motion } from "framer-motion";
 import Sidebar from "../Sidebar/Sidebar";
 
-const LeftPanel = () => {
+const LeftPanel = ({
+  candidateName = "Candidate",
+  targetRole = "Software Engineer",
+  interviewStage = "Technical Round",
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: -25 }}
@@ -10,7 +14,11 @@ const LeftPanel = () => {
       transition={{ duration: 0.4 }}
       className="w-full lg:w-[280px]"
     >
-      <Sidebar />
+      <Sidebar
+        candidateName={candidateName}
+        targetRole={targetRole}
+        interviewStage={interviewStage}
+      />
     </motion.div>
   );
 };

@@ -1,59 +1,60 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from 'axios';
 
-const genAI = new GoogleGenerativeAI(
-  import.meta.env.VITE_GEMINI_API_KEY
-);
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
-});
-
-export async function evaluateAnswer(question, answer) {
+/**
+ * Evaluate a candidate's answer to an interview question using Gemini.
+ * Sends the question and answer to the secure backend API.
+ *
+ * @param {string} question - The interview question asked
+ * @param {string} answer - The candidate's response
+ * @param {object} context - Additional optional context
+ * @returns {Promise<{
+ *   score: number,
+ *   feedback: string,
+ *   strengths?: string[],
+ *   improvements?: string[],
+ *   metrics?: { technical: number, communication: number, problemSolving: number, confidence: number },
+ *   recommendation?: string
+ * }>}
+ */
+export async function evaluateAnswer(question, answer, context = {}) {
   try {
-    const prompt = `
-You are an expert technical interviewer.
+    const response = await axios.post('/api/evaluate-answer', {
+      question,
+      answer,
+      context,
+    });
 
-Question:
-${question}
+    if (response.data && response.data.success) {
+      return {
+        score: response.data.score ?? 7,
+        feedback: response.data.feedback || 'Answer evaluated.',
+        strengths: response.data.strengths || [],
+        improvements: response.data.improvements || [],
+        metrics: response.data.metrics || {
+          technical: 80,
+          communication: 80,
+          problemSolving: 75,
+          confidence: 80,
+        },
+        recommendation: response.data.recommendation || 'Solid Response',
+      };
+    }
 
-Candidate Answer:
-${answer}
-
-Evaluate the answer.
-
-Give:
-1. Score out of 10
-2. Short constructive feedback
-
-Return ONLY valid JSON.
-
-Example:
-
-{
-  "score": 8,
-  "feedback": "Good explanation. Add a real-world example and mention performance considerations."
-}
-`;
-
-    const result = await model.generateContent(prompt);
-
-    const response = await result.response;
-
-    let text = response.text().trim();
-
-    // Remove markdown if Gemini returns it
-    text = text.replace(/```json/g, "");
-    text = text.replace(/```/g, "");
-
-    return JSON.parse(text);
-
+    throw new Error(response.data?.error || 'Unable to evaluate answer.');
   } catch (error) {
-    console.error("Gemini Evaluation Error:", error);
+    const message =
+      error.response?.data?.error ||
+      error.message ||
+      'Unable to connect to AI evaluation service. Please check your API key and backend.';
+    console.error('Answer Evaluation Error:', message);
 
     return {
       score: 0,
-      feedback:
-        "Unable to evaluate the answer at the moment. Please try again.",
+      feedback: `⚠️ Evaluation Error: ${message}`,
+      strengths: [],
+      improvements: ['Verify backend connection and Gemini API key status in .env.'],
+      isError: true,
+      error: message,
     };
   }
 }

@@ -1,60 +1,29 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from 'axios';
 
-const genAI = new GoogleGenerativeAI(
-  import.meta.env.VITE_GEMINI_API_KEY
-);
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
-});
-
+/**
+ * Generate 10 personalized interview questions based on candidate's resume text.
+ * Sends the resume text to the secure backend Gemini API.
+ *
+ * @param {string} resumeText - Extracted text content from the uploaded resume
+ * @returns {Promise<{ questions: string[], skills?: string[] }>}
+ */
 export async function generateInterviewQuestions(resumeText) {
   try {
-    const prompt = `
-You are an expert technical interviewer.
+    const response = await axios.post('/api/generate-questions', {
+      resumeText,
+    });
 
-Based on the following resume, generate EXACTLY 10 interview questions.
+    if (response.data && response.data.success && Array.isArray(response.data.questions)) {
+      return response.data.questions;
+    }
 
-Rules:
-- Start with an introduction question.
-- Ask technical questions related to the candidate's skills.
-- Gradually increase difficulty.
-- Return ONLY a JSON array.
-- No markdown.
-- No explanation.
-
-Resume:
-
-${resumeText}
-`;
-
-    const result = await model.generateContent(prompt);
-
-    const response = await result.response;
-
-    let text = response.text().trim();
-
-    // Remove markdown if Gemini returns it
-    text = text.replace(/```json/g, "");
-    text = text.replace(/```/g, "");
-
-    const questions = JSON.parse(text);
-
-    return questions;
+    throw new Error(response.data?.error || 'Invalid response structure from question generation API.');
   } catch (error) {
-    console.error("Gemini Error:", error);
-
-    return [
-      "Tell me about yourself.",
-      "Explain your strongest technical skill.",
-      "Describe one project from your resume.",
-      "What challenges did you face?",
-      "How did you solve those challenges?",
-      "Explain a technology you have worked with.",
-      "Describe teamwork in one of your projects.",
-      "How do you debug an application?",
-      "What are your strengths?",
-      "Why should we hire you?",
-    ];
+    const message =
+      error.response?.data?.error ||
+      error.message ||
+      'Failed to generate personalized interview questions. Please check your Gemini API key and backend server.';
+    console.error('Interview Generation Error:', message);
+    throw new Error(message);
   }
 }

@@ -13,6 +13,7 @@ const CenterPanel = ({
   evaluation,
   loading,
   onNextQuestion,
+  isLastQuestion = false,
 }) => {
   const [autoRecord, setAutoRecord] = useState(false);
 
@@ -39,6 +40,7 @@ const CenterPanel = ({
         onNextQuestion={onNextQuestion}
         autoRecord={autoRecord}
         onAutoRecordComplete={() => setAutoRecord(false)}
+        isLastQuestion={isLastQuestion}
       />
     </motion.div>
   );
