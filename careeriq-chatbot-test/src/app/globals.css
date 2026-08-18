@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #16283f;
+  color: #ffffff;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer utilities {
+  /* Blueprint / grid backdrop used across the whole site */
+  .bg-blueprint {
+    background-color: #16283f;
+    background-image: radial-gradient(circle at 20% 0%, rgba(100, 210, 200, 0.08), transparent 45%),
+      radial-gradient(circle at 100% 30%, rgba(100, 210, 200, 0.06), transparent 40%),
+      linear-gradient(rgba(100, 210, 200, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100, 210, 200, 0.06) 1px, transparent 1px);
+    background-size: auto, auto, 40px 40px, 40px 40px;
+  }
+
+  /* Glassmorphism card base */
+  .glass-panel {
+    background: linear-gradient(180deg, rgba(38, 62, 104, 0.65) 0%, rgba(32, 54, 93, 0.65) 100%);
+    border: 1px solid rgba(100, 210, 200, 0.18);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .glow-border {
+    box-shadow: 0 0 0 1px rgba(100, 210, 200, 0.25), 0 0 30px rgba(100, 210, 200, 0.08);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 18px rgba(100, 210, 200, 0.35);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(100, 210, 200, 0.25);
+    border-radius: 10px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
