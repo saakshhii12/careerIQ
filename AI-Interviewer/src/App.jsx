@@ -7,6 +7,7 @@ import {
 
 import ResumePage from "./pages/ResumePage";
 import InterviewPage from "./pages/InterviewPage";
+import ChatPage from "./pages/ChatPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Navigate to="/resume" replace />} />
         <Route path="/resume" element={<ResumePage />} />
         <Route path="/interview" element={<InterviewPage />} />
+        <Route path="/chat" element={<ChatPage />} />
       </Routes>
     </BrowserRouter>
   );

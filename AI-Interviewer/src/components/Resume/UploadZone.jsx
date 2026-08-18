@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { UploadCloud, FileText, Sparkles } from "lucide-react";
@@ -6,16 +6,38 @@ import { UploadCloud, FileText, Sparkles } from "lucide-react";
 import { extractTextFromPDF } from "../../services/pdfService";
 import { generateInterviewQuestions } from "../../services/interviewService";
 import { parseResume } from "../../services/resumeService";
+import { useResume } from "../../context/ResumeContext";
 
 const UploadZone = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const { setResumeText: setContextResumeText } = useResume();
 
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [candidateInfo, setCandidateInfo] = useState(null);
   const [resumeText, setResumeText] = useState("");
+  const [questionError, setQuestionError] = useState("");
+  const [uploadError, setUploadError] = useState("");
+
+  const generateQuestions = async (text) => {
+    setQuestionError("");
+    setLoading(true);
+
+    try {
+      const aiQuestions = await generateInterviewQuestions(text);
+      setQuestions(aiQuestions);
+    } catch (error) {
+      console.error("Qwen question generation failed:", error);
+      setQuestions([]);
+      setQuestionError(
+        error.message || "Qwen could not generate personalized questions. Please retry."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -28,30 +50,43 @@ const UploadZone = () => {
     }
 
     setFileName(file.name);
+    setQuestions([]);
+    setQuestionError("");
+    setUploadError("");
+    setCandidateInfo(null);
     setLoading(true);
 
+    let extracted;
     try {
-      // Step 1: Extract text from PDF
-      const extracted = await extractTextFromPDF(file);
+      extracted = await extractTextFromPDF(file);
+      if (!extracted.trim()) {
+        throw new Error(
+          "No selectable text was found in this PDF. Upload a text-based resume, not a scanned image."
+        );
+      }
       setResumeText(extracted);
-
-      // Step 2: Parse resume to extract candidate info
-      const candidate = await parseResume(extracted);
-      setCandidateInfo(candidate);
-
-      // Step 3: Generate personalized questions
-      const aiQuestions = await generateInterviewQuestions(extracted);
-
-      console.log("AI Questions:", aiQuestions);
-      console.log("Candidate Info:", candidate);
-
-      setQuestions(aiQuestions);
+      // Share resume text with the global context so the chat page can use it
+      setContextResumeText(extracted);
     } catch (error) {
       console.error(error);
-      alert(`Unable to process resume: ${error.message}`);
+      setUploadError(
+        error.message || "The PDF could not be read. Please choose another resume file."
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Candidate details are supplementary. A temporary API failure here must not
+    // prevent Qwen from generating questions from the extracted resume text.
+    try {
+      const candidate = await parseResume(extracted);
+      setCandidateInfo(candidate);
+    } catch (error) {
+      console.warn("Candidate profile parsing failed:", error);
     }
 
     setLoading(false);
+    await generateQuestions(extracted);
   };
 
   return (
@@ -183,21 +218,57 @@ const UploadZone = () => {
               {questions[0]}
             </p>
 
-            <button
-              className="mt-6 rounded-xl bg-teal-400 px-6 py-3 font-semibold text-slate-900 hover:scale-105 transition"
-              onClick={() =>
-                navigate("/interview", {
-                  state: {
-                    questions,
-                    resumeText,
-                    candidateInfo,
-                  },
-                })
-              }
-            >
-              Start AI Interview
-            </button>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                className="rounded-xl bg-teal-400 px-6 py-3 font-semibold text-slate-900 hover:scale-105 transition"
+                onClick={() =>
+                  navigate("/interview", {
+                    state: {
+                      questions,
+                      resumeText,
+                      candidateInfo,
+                    },
+                  })
+                }
+              >
+                Start AI Interview
+              </button>
 
+              <button
+                className="rounded-xl border border-teal-400/50 px-6 py-3 font-semibold text-teal-300 hover:bg-teal-400/10 transition"
+                onClick={() => navigate("/chat")}
+              >
+                💬 AI Career Chat
+              </button>
+            </div>
+
+          </div>
+        )}
+
+        {questionError && (
+          <div className="mt-8 rounded-2xl border border-red-400/40 bg-red-500/10 p-6 text-left">
+            <p className="font-semibold text-red-200">Personalized question generation failed</p>
+            <p className="mt-2 text-sm text-red-100">{questionError}</p>
+            <button
+              onClick={() => generateQuestions(resumeText)}
+              disabled={loading || !resumeText}
+              className="mt-4 rounded-xl border border-red-300/50 px-5 py-2 font-semibold text-red-100 transition hover:bg-red-400/10 disabled:opacity-60"
+            >
+              Retry Qwen
+            </button>
+          </div>
+        )}
+
+        {uploadError && (
+          <div className="mt-8 rounded-2xl border border-red-400/40 bg-red-500/10 p-6 text-left">
+            <p className="font-semibold text-red-200">Unable to read this resume</p>
+            <p className="mt-2 text-sm text-red-100">{uploadError}</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-4 rounded-xl border border-red-300/50 px-5 py-2 font-semibold text-red-100 transition hover:bg-red-400/10"
+            >
+              Choose another PDF
+            </button>
           </div>
         )}
 

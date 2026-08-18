@@ -10,14 +10,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", model: "Qwen/Qwen3-8B", voiceServiceConfigured: Boolean(process.env.ELEVENLABS_API_KEY) });
+});
+
 const HF_TOKEN = process.env.HF_TOKEN;
-const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen3-8B";
+const HF_MODEL = "Qwen/Qwen3-8B";
 const HF_PROVIDER = process.env.HF_PROVIDER || "nscale";
 const hfClient = new InferenceClient(HF_TOKEN);
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+
+// Creates a short-lived browser-safe credential for ElevenLabs Scribe Realtime
+// transcription. The permanent ELEVENLABS_API_KEY never leaves this server.
+app.post("/api/voice/session", async (_req, res) => {
+  if (!ELEVENLABS_API_KEY) {
+    return res.status(503).json({ error: "ElevenLabs voice service is not configured on the server." });
+  }
+
+  try {
+    const response = await fetch("https://api.elevenlabs.io/v1/single-use-token/realtime_scribe", {
+      method: "POST",
+      headers: {
+        "xi-api-key": ELEVENLABS_API_KEY,
+      },
+    });
+    const session = await response.json().catch(() => ({}));
+    if (!response.ok || !session.token) {
+      throw new Error(session.detail?.message || `ElevenLabs Scribe token request failed (${response.status}).`);
+    }
+    return res.json({ token: session.token });
+  } catch (error) {
+    console.error("ElevenLabs voice session error:", error.message);
+    return res.status(502).json({ error: "Unable to connect to voice service." });
+  }
+});
 
 // Uses Hugging Face Inference Providers. The legacy
 // api-inference.huggingface.co endpoint is no longer available.
-async function callQwenAPI(prompt) {
+async function callQwenAPI(prompt, maxTokens = 500) {
   if (!HF_TOKEN) {
     throw new Error("HF_TOKEN is not configured on the server.");
   }
@@ -34,7 +64,7 @@ async function callQwenAPI(prompt) {
         },
         { role: "user", content: prompt },
       ],
-      max_tokens: 500,
+      max_tokens: maxTokens,
       temperature: 0.2,
     });
 
@@ -59,6 +89,7 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : "Unknown server error";
 }
 
+// ─── Evaluate a single answer (preserved for compatibility) ───────────────────
 app.post("/api/evaluate", async (req, res) => {
   try {
     const { question, answer, resume } = req.body;
@@ -102,7 +133,7 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     const text = await callQwenAPI(prompt);
-    
+
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -122,6 +153,7 @@ Return ONLY valid JSON in this exact format:
   }
 });
 
+// ─── Generate personalised interview questions from resume ───────────────────
 app.post("/api/generate-questions", async (req, res) => {
   try {
     const { resume } = req.body;
@@ -149,7 +181,7 @@ Return ONLY this format:
 ["Question 1?", "Question 2?", "Question 3?", ...]`;
 
     const text = await callQwenAPI(prompt);
-    
+
     // Extract JSON array from response
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
@@ -158,7 +190,15 @@ Return ONLY this format:
 
     const questions = JSON.parse(jsonMatch[0]);
 
-    return res.json({ questions });
+    if (
+      !Array.isArray(questions) ||
+      questions.length !== 10 ||
+      questions.some((question) => typeof question !== "string" || !question.trim())
+    ) {
+      throw new Error("Qwen returned an invalid question list.");
+    }
+
+    return res.json({ questions: questions.map((question) => question.trim()) });
   } catch (error) {
     console.error("Qwen Question Generation Error:", error);
 
@@ -168,6 +208,7 @@ Return ONLY this format:
   }
 });
 
+// ─── Parse resume and extract candidate information ──────────────────────────
 app.post("/api/parse-resume", async (req, res) => {
   try {
     const { resume } = req.body;
@@ -197,7 +238,7 @@ Return ONLY this exact JSON structure (use "Not available" if information cannot
 CRITICAL: Do not fabricate information. Only extract what is explicitly in the resume.`;
 
     const text = await callQwenAPI(prompt);
-    
+
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -212,6 +253,187 @@ CRITICAL: Do not fabricate information. Only extract what is explicitly in the r
 
     return res.status(500).json({
       error: errorMessage(error),
+    });
+  }
+});
+
+// ─── Final evaluation of the complete interview (all Q&A pairs) ──────────────
+app.post("/api/final-evaluation", async (req, res) => {
+  try {
+    const { resume, questions, answers, metadata = {} } = req.body;
+
+    if (!Array.isArray(questions) || !Array.isArray(answers)) {
+      return res.status(400).json({ error: "questions and answers must be arrays." });
+    }
+    if (questions.length === 0 || answers.length === 0) {
+      return res.status(400).json({ error: "questions and answers must not be empty." });
+    }
+
+    const resumeContext = resume ? `Candidate Resume:\n${resume}\n\n` : "";
+
+    // Build Q&A transcript for Qwen to evaluate
+    const transcript = questions
+      .map((q, i) => {
+        const a = answers[i] || "(No answer provided)";
+        return `Q${i + 1}: ${q}\nA${i + 1}: ${a}`;
+      })
+      .join("\n\n");
+
+    const integrityNote = Array.isArray(metadata.integrityEvents) && metadata.integrityEvents.length
+      ? `Observed browser integrity events (context only; do not turn these into claims about character): ${metadata.integrityEvents.map((event) => event.type).join(", ")}.`
+      : "No browser integrity events were recorded.";
+
+    const prompt = `${resumeContext}Below is a complete interview transcript for this candidate. Evaluate the entire interview objectively.
+
+Interview Transcript:
+${transcript}
+
+Evaluation Instructions:
+- Base every score ONLY on what was actually said in the answers above.
+- If answers are vague, short, or incorrect, scores must be meaningfully lower.
+- If answers are detailed, accurate, and well-structured, scores should be higher.
+- Scores must reflect the actual quality difference between strong and weak answers.
+- Do NOT fabricate or invent any information not present in the transcript.
+- strengths and weaknesses must be specific observations from the transcript, not generic phrases.
+- ${integrityNote}
+
+Return ONLY valid JSON in exactly this format (no markdown, no explanation outside JSON):
+{
+  "overallScore": <integer 0-100>,
+  "technicalScore": <integer 0-100>,
+  "communicationScore": <integer 0-100>,
+  "problemSolvingScore": <integer 0-100>,
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "weaknesses": ["specific weakness 1", "specific weakness 2"],
+  "recommendation": "<one-line verdict>",
+  "feedback": "<2-4 sentence holistic assessment of the candidate based on this interview>"
+}`;
+
+    const text = await callQwenAPI(prompt, 800);
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in Qwen final-evaluation response.");
+    }
+
+    const evaluation = JSON.parse(jsonMatch[0]);
+    const scoreFields = ["overallScore", "technicalScore", "communicationScore", "problemSolvingScore"];
+    if (
+      !scoreFields.every((field) => Number.isInteger(evaluation[field]) && evaluation[field] >= 0 && evaluation[field] <= 100) ||
+      typeof evaluation.feedback !== "string" ||
+      typeof evaluation.recommendation !== "string" ||
+      !Array.isArray(evaluation.strengths) ||
+      !Array.isArray(evaluation.weaknesses)
+    ) {
+      throw new Error("Qwen returned an invalid final evaluation.");
+    }
+    return res.json(evaluation);
+  } catch (error) {
+    console.error("Final Evaluation Error:", error);
+    return res.status(500).json({ error: errorMessage(error) });
+  }
+});
+
+// ─── AI Career Chat ───────────────────────────────────────────────────────────
+const CHAT_SYSTEM_PROMPT = `/no_think
+You are CareerIQ AI, a professional career assistant embedded in an AI interview platform.
+
+Your role:
+- Give practical, accurate career guidance based on the candidate's background.
+- Help with interview preparation, technical questions, resume analysis, job search, and skill development.
+- When the user provides resume information at the start of the conversation, use it to personalise your responses.
+- Never invent or fabricate details about the candidate that are not present in what they have shared.
+- If information is unavailable, say so clearly and offer general guidance instead.
+- Do not pretend to be a human recruiter or a specific company's interviewer.
+- Keep answers concise and readable. Use bullet points when listing multiple items.
+- Be encouraging and constructive — this is a candidate support tool, not a screening tool.
+
+Always respond in plain text or markdown. Do not output JSON unless explicitly asked.`;
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message, conversation, resumeContext } = req.body;
+
+    // ── Input validation ──────────────────────────────────────────────────────
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      return res.status(400).json({ error: "message is required and must be a non-empty string." });
+    }
+    if (message.length > 2000) {
+      return res.status(400).json({ error: "message must not exceed 2000 characters." });
+    }
+    if (conversation !== undefined && !Array.isArray(conversation)) {
+      return res.status(400).json({ error: "conversation must be an array." });
+    }
+
+    // ── Build message list ────────────────────────────────────────────────────
+    // System prompt first
+    const systemMessages = [{ role: "system", content: CHAT_SYSTEM_PROMPT }];
+
+    // If a resume was provided inject it as an assistant-visible system note
+    if (resumeContext && typeof resumeContext === "string" && resumeContext.trim().length > 0) {
+      const truncatedResume = resumeContext.slice(0, 4000); // guard against huge resumes
+      systemMessages.push({
+        role: "system",
+        content: `The following is the candidate's resume. Use it to personalise your responses:\n\n${truncatedResume}`,
+      });
+    }
+
+    // Validated history — cap at last 20 turns and each message at 2000 chars
+    const history = Array.isArray(conversation)
+      ? conversation
+          .slice(-20)
+          .filter(
+            (m) =>
+              m &&
+              (m.role === "user" || m.role === "assistant") &&
+              typeof m.content === "string"
+          )
+          .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))
+      : [];
+
+    const messages = [
+      ...systemMessages,
+      ...history,
+      { role: "user", content: message.trim() },
+    ];
+
+    // ── Call Hugging Face ─────────────────────────────────────────────────────
+    if (!HF_TOKEN) {
+      return res.status(503).json({ error: "AI service is not configured on the server." });
+    }
+
+    const completion = await hfClient.chatCompletion({
+      provider: HF_PROVIDER,
+      model: HF_MODEL,
+      messages,
+      max_tokens: 700,
+      temperature: 0.6,
+    });
+
+    const reply = completion.choices?.[0]?.message?.content;
+    if (typeof reply !== "string" || reply.trim().length === 0) {
+      throw new Error("The AI model returned an empty response.");
+    }
+
+    return res.json({ reply: reply.trim() });
+  } catch (error) {
+    const status = error?.httpResponse?.status;
+    const details = error?.httpResponse?.body;
+    console.error("Chat API Error:", {
+      message: error.message,
+      status,
+      // do NOT log HF_TOKEN or other secrets
+    });
+
+    if (status === 429) {
+      return res.status(429).json({ error: "AI service rate limit reached. Please wait a moment and try again." });
+    }
+    if (status === 503 || status === 504) {
+      return res.status(503).json({ error: "AI service is temporarily unavailable. Please try again." });
+    }
+
+    return res.status(500).json({
+      error: "AI service is temporarily unavailable. Please try again.",
     });
   }
 });
