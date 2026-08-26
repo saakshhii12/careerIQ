@@ -1,17 +1,59 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { Pool } from "pg";
 import { InferenceClient } from "@huggingface/inference";
+import { fileURLToPath } from "node:url";
+import authRoutes from "./routes/auth.js";
+import candidateRoutes from "./routes/candidate.js";
+import applicationRoutes from "./routes/applications.js";
+import quizRoutes from "./routes/quiz.js";
+import interviewRoutes from "./routes/interview.js";
 
-dotenv.config();
+// Load secrets from the backend directory, regardless of where Node is started.
+dotenv.config({ path: fileURLToPath(new URL(".env", import.meta.url)) });
+
+const databaseUrl = process.env.DATABASE_URL;
+const db = new Pool({
+  connectionString: databaseUrl,
+  ssl: databaseUrl?.includes("supabase.co") ? { rejectUnauthorized: false } : undefined,
+});
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(fileURLToPath(new URL("uploads", import.meta.url))));
+
+// Database-backed CareerIQ platform APIs.
+app.use("/api/auth", authRoutes);
+app.use("/api/candidate", candidateRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/quiz", quizRoutes);
+app.use("/api/interviews", interviewRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", model: "Qwen/Qwen3-8B", voiceServiceConfigured: Boolean(process.env.ELEVENLABS_API_KEY) });
+});
+
+app.get("/api/db-test", async (_req, res) => {
+  if (!databaseUrl) {
+    return res.status(503).json({ connected: false, error: "Database is not configured on the server." });
+  }
+
+  try {
+    const result = await db.query("SELECT NOW() AS current_time;");
+    return res.json({ connected: true, current_time: result.rows[0].current_time });
+  } catch (error) {
+    // Keep the client response generic, but log safe PostgreSQL diagnostics server-side.
+    // Never log the connection string, password, or other environment variables.
+    console.error("Database connection test failed:", {
+      code: error.code,
+      message: error.message,
+      severity: error.severity,
+    });
+    return res.status(503).json({ connected: false, error: "Unable to connect to the database." });
+  }
 });
 
 const HF_TOKEN = process.env.HF_TOKEN;
