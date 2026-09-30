@@ -46,11 +46,11 @@ export function JobCard({
     <GlassCard className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-accent)]/12 font-mono text-sm font-semibold text-[var(--color-accent)]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent-soft)] text-sm font-semibold text-[var(--color-accent)]">
             {job.company.slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <h3 className="truncate text-base font-medium text-white">{job.title}</h3>
+            <h3 className="truncate text-base font-medium text-[var(--color-text)]">{job.title}</h3>
             <p className="truncate text-sm text-[var(--color-text-muted)]">{job.company}</p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export function JobCard({
         ))}
       </div>
 
-      <div className="mt-1 flex items-center justify-between border-t border-white/[0.06] pt-4">
+      <div className="mt-1 flex items-center justify-between border-t border-[var(--color-border)] pt-4">
         <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-faint)]">
           <Users size={13} /> {job.applicantsCount} applicants
         </span>

@@ -20,7 +20,7 @@ export default function ApplicationStatusListPage() {
         {isLoading && (
           <div className="flex flex-col gap-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-32 animate-pulse rounded-[var(--radius-card)] bg-white/[0.04]" />
+              <div key={i} className="h-32 animate-pulse rounded-[var(--radius-card)] bg-[var(--color-bg-elevated)]" />
             ))}
           </div>
         )}
@@ -39,7 +39,7 @@ export default function ApplicationStatusListPage() {
             <GlassCard interactive className="flex flex-col gap-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-medium text-white">{app.jobTitle}</h3>
+                  <h3 className="text-base font-medium text-[var(--color-text)]">{app.jobTitle}</h3>
                   <p className="text-sm text-[var(--color-text-muted)]">{app.company}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">

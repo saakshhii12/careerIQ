@@ -4,10 +4,20 @@ export interface AnalyticsWeeklyPoint {
   hires: number;
 }
 
+export interface AnalyticsFunnelStage {
+  stage: string;
+  count: number;
+}
+
 export interface RecruiterAnalytics {
-  avgTimeToHireDays: number;
-  assessmentPassRate: number; // 0-100
-  offerAcceptanceRate: number; // 0-100
+  totalApplications: number;
+  avgTimeToHireDays: number | null;
+  assessmentPassRate: number | null;
+  offerAcceptanceRate: number | null;
+  interviewCompletionRate: number | null;
   weeklyTrend: AnalyticsWeeklyPoint[];
   topSkillsInDemand: { skill: string; count: number }[];
+  statusDistribution: { status: string; count: number }[];
+  funnel: AnalyticsFunnelStage[];
+  insufficientData?: boolean;
 }

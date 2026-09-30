@@ -21,7 +21,7 @@ export function useCandidate(id: string) {
 export function useDecideCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, decision }: { id: string; decision: "accept" | "reject" | "waitlist" }) =>
+    mutationFn: ({ id, decision }: { id: string; decision: "shortlist" | "accept" | "reject" | "waitlist" }) =>
       decideCandidate(id, decision),
     onSuccess: (candidate) => {
       queryClient.setQueryData<Candidate[]>(["recruiter", "candidates"], (old) =>

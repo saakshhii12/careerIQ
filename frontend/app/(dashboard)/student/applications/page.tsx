@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Search } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, CheckCircle2, Search } from "lucide-react";
 import { Topbar } from "@/components/layout/topbar";
 import { Input } from "@/components/ui/input";
 import { JobCard } from "@/components/applications/job-card";
 import { useJobs, useApplyToJob } from "@/lib/hooks/use-jobs";
 
 export default function ApplicationsPage() {
-  const { data: jobs, isLoading, isError } = useJobs();
+  const { data: jobs, isLoading, isError, error } = useJobs();
   const applyMutation = useApplyToJob();
   const [search, setSearch] = useState("");
   const [confirmedJobTitle, setConfirmedJobTitle] = useState<string | null>(null);
@@ -27,25 +28,43 @@ export default function ApplicationsPage() {
 
   function handleApply(jobId: string) {
     const job = jobs?.find((j) => j.id === jobId);
+    applyMutation.reset();
     applyMutation.mutate(jobId, {
       onSuccess: () => {
-        // Chat does NOT open on application — it unlocks only once a
-        // recruiter accepts the candidate. See /student/chat for the lock UI.
+        // Recruiter chat does NOT open on application — it unlocks only when a
+        // recruiter shortlists the candidate. See /student/messages.
         setConfirmedJobTitle(job?.title ?? "the role");
-        setTimeout(() => setConfirmedJobTitle(null), 4000);
+        setTimeout(() => setConfirmedJobTitle(null), 6000);
       },
     });
   }
 
+  const applyError = applyMutation.error instanceof Error ? applyMutation.error.message : null;
+
   return (
     <>
-      <Topbar title="Applications" subtitle="Every open role from recruiters on CareerIQ" />
+      <Topbar title="Jobs" subtitle="Every open role from recruiters on CareerIQ" />
 
-      <div className="flex flex-col gap-6 p-8">
+      <div className="flex flex-col gap-6 p-6">
         {confirmedJobTitle && (
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--color-success)]/25 bg-[var(--color-success)]/8 px-4 py-3 text-sm text-[var(--color-success)]">
+          <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-success)]/25 bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success)]">
             <CheckCircle2 size={16} />
-            Application submitted for {confirmedJobTitle}. Chat unlocks once the recruiter accepts you.
+            Application submitted for {confirmedJobTitle}.
+            <Link href="/student/status" className="font-medium underline">
+              Track it in Applications
+            </Link>
+          </div>
+        )}
+
+        {applyError && (
+          <div className="flex flex-wrap items-start gap-2 rounded-[var(--radius-card)] border border-[var(--color-danger)]/25 bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger)]">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>{applyError}</span>
+            {/resume/i.test(applyError) && (
+              <Link href="/student/resume" className="font-medium underline">
+                Upload resume
+              </Link>
+            )}
           </div>
         )}
 
@@ -61,13 +80,15 @@ export default function ApplicationsPage() {
         {isLoading && (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-64 animate-pulse rounded-[var(--radius-card)] bg-white/[0.04]" />
+              <div key={i} className="h-64 animate-pulse rounded-[var(--radius-card)] bg-[var(--color-bg-elevated)]" />
             ))}
           </div>
         )}
 
         {isError && (
-          <div className="text-sm text-[var(--color-danger)]">Couldn&apos;t load jobs. Try refreshing.</div>
+          <div className="text-sm text-[var(--color-danger)]">
+            {error instanceof Error ? error.message : "Couldn't load jobs."}
+          </div>
         )}
 
         {!isLoading && filtered.length === 0 && (

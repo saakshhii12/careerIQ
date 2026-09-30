@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { query } from "../db.js";
+import { query, dbErrorDetails } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { callQwenAPI, extractJson, errorMessage } from "../services/qwen.js";
+import { createNotification, notifyRecruitersForApplication } from "../services/notifications.js";
 import { getStudentId } from "./candidate.js";
+import { QUIZ_PASS_THRESHOLD } from "../services/pipeline.js";
 
 const router = Router();
-const PASS_THRESHOLD = 60;
+const PASS_THRESHOLD = QUIZ_PASS_THRESHOLD;
 const QUESTION_COUNT = 10;
 
 async function loadApplicationForStudent(applicationId, studentId) {
@@ -73,8 +75,18 @@ router.post("/start", requireAuth, requireRole("student"), async (req, res) => {
     const application = await loadApplicationForStudent(applicationId, studentId);
     if (!application) return res.status(404).json({ error: "Application not found." });
 
+    if (application.status === "Rejected") {
+      return res.status(403).json({
+        error: "This application cannot proceed.",
+      });
+    }
     if (application.quiz_passed) {
       return res.status(400).json({ error: "You have already passed the quiz for this application." });
+    }
+    if (application.quiz_status === "Completed" && !application.quiz_passed) {
+      return res.status(403).json({
+        error: `Quiz score was below ${PASS_THRESHOLD}%. You cannot proceed with this application.`,
+      });
     }
 
     const inProgress = await query(
@@ -121,8 +133,8 @@ router.post("/start", requireAuth, requireRole("student"), async (req, res) => {
 
     return res.status(201).json({ attemptId, questions: storedQuestions, resumed: false });
   } catch (error) {
-    console.error("Quiz start error:", error.message);
-    return res.status(500).json({ error: errorMessage(error) });
+    console.error("Quiz start error:", dbErrorDetails(error));
+    return res.status(error.status || 500).json({ error: errorMessage(error) });
   }
 });
 
@@ -186,11 +198,37 @@ router.post("/submit", requireAuth, requireRole("student"), async (req, res) => 
     await query(
       `UPDATE applications
        SET quiz_status = 'Completed',
-           quiz_passed = CASE WHEN $2 THEN true ELSE quiz_passed END,
-           best_quiz_score = GREATEST(COALESCE(best_quiz_score, 0), $3)
+           quiz_passed = $2,
+           best_quiz_score = GREATEST(COALESCE(best_quiz_score, 0), $3),
+           status = CASE WHEN $2 THEN status ELSE 'Rejected' END
        WHERE application_id = $1`,
       [attempt.application_id, passed, score]
     );
+
+    const jobInfo = await query(
+      `SELECT j.job_title, c.company_name
+       FROM applications a
+       JOIN jobs j ON j.job_id = a.job_id
+       JOIN companies c ON c.company_id = j.company_id
+       WHERE a.application_id = $1`,
+      [attempt.application_id]
+    );
+    const jobTitle = jobInfo.rows[0]?.job_title ?? "the role";
+
+    await createNotification(req.user.userId, {
+      type: passed ? "assessment_passed" : "assessment_failed",
+      message: passed
+        ? `Assessment passed for ${jobTitle} (${score}%). The interview is now available.`
+        : `Assessment scored ${score}% for ${jobTitle}. Below ${PASS_THRESHOLD}% — this application cannot proceed.`,
+      link: `/student/status/${attempt.application_id}`,
+    });
+    await notifyRecruitersForApplication(attempt.application_id, {
+      type: passed ? "assessment_passed" : "assessment_failed",
+      message: passed
+        ? `A candidate passed the quiz (${score}%) for ${jobTitle}.`
+        : `A candidate failed the quiz (${score}%) for ${jobTitle}.`,
+      link: `/recruiter/candidates/${attempt.application_id}`,
+    });
 
     return res.json({
       score,
@@ -199,10 +237,10 @@ router.post("/submit", requireAuth, requireRole("student"), async (req, res) => 
       totalQuestions: questions.rows.length,
       message: passed
         ? "Quiz Passed — You are eligible for the AI Interview."
-        : `Quiz Score: ${score}% — You need at least ${PASS_THRESHOLD}% to continue.`,
+        : `Quiz score: ${score}%. You need at least ${PASS_THRESHOLD}% to continue. This application is now closed.`,
     });
   } catch (error) {
-    console.error("Quiz submit error:", error.message);
+    console.error("Quiz submit error:", dbErrorDetails(error));
     return res.status(500).json({ error: errorMessage(error) });
   }
 });

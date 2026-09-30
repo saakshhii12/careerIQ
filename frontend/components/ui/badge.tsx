@@ -3,15 +3,15 @@ import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tracking-wide",
+  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
   {
     variants: {
       tone: {
-        neutral: "bg-white/8 text-[var(--color-text-muted)] border border-white/10",
-        accent: "bg-[var(--color-accent)]/12 text-[var(--color-accent)] border border-[var(--color-accent)]/25",
-        success: "bg-[var(--color-success)]/12 text-[var(--color-success)] border border-[var(--color-success)]/25",
-        warning: "bg-[var(--color-warning)]/12 text-[var(--color-warning)] border border-[var(--color-warning)]/25",
-        danger: "bg-[var(--color-danger)]/12 text-[var(--color-danger)] border border-[var(--color-danger)]/25",
+        neutral: "bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] border border-[var(--color-border)]",
+        accent: "bg-[var(--color-accent-soft)] text-[var(--color-accent-dim)] border border-[var(--color-accent)]/20",
+        success: "bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20",
+        warning: "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/20",
+        danger: "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border border-[var(--color-danger)]/20",
       },
     },
     defaultVariants: { tone: "neutral" },
@@ -26,16 +26,19 @@ export function Badge({ className, tone, ...props }: BadgeProps) {
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
-/** Maps an ApplicationSummary["stage"] to a badge tone + label, kept in one
- * place so the mapping stays consistent everywhere a stage is rendered. */
-export const STAGE_META: Record<
-  string,
-  { label: string; tone: BadgeProps["tone"] }
-> = {
+/**
+ * Labels for the pipeline stages derived from applications.status,
+ * quiz_status/quiz_passed, and interview_sessions.status.
+ */
+export const STAGE_META: Record<string, { label: string; tone: BadgeProps["tone"] }> = {
   applied: { label: "Applied", tone: "neutral" },
-  assessment: { label: "Assessment", tone: "accent" },
+  matched: { label: "Matched", tone: "neutral" },
+  assessment: { label: "Quiz required", tone: "warning" },
+  assessment_passed: { label: "Quiz passed", tone: "accent" },
   interview: { label: "Interview", tone: "accent" },
-  accepted: { label: "Accepted", tone: "success" },
+  review: { label: "Under review", tone: "accent" },
+  shortlisted: { label: "Shortlisted", tone: "success" },
+  accepted: { label: "Selected", tone: "success" },
   waitlisted: { label: "Waitlisted", tone: "warning" },
   rejected: { label: "Rejected", tone: "danger" },
 };

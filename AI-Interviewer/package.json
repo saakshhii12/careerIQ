@@ -11,8 +11,6 @@
   },
   "dependencies": {
     "@elevenlabs/client": "^1.17.0",
-    "@google/genai": "^2.15.0",
-    "@google/generative-ai": "^0.24.1",
     "@mediapipe/tasks-vision": "^1.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tensorflow-models/coco-ssd": "^2.2.3",

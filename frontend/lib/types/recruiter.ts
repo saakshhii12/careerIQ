@@ -1,5 +1,5 @@
 export interface HiringFunnelStage {
-  stage: "applied" | "assessment" | "interview" | "offer" | "hired";
+  stage: string;
   label: string;
   count: number;
 }
@@ -10,8 +10,8 @@ export interface RecruiterActiveJob {
   department: string;
   applicants: number;
   newApplicants: number;
-  status: "open" | "paused" | "closed";
-  postedAt: string; // ISO date
+  status: "open" | "paused" | "closed" | "archived";
+  postedAt: string;
 }
 
 export interface CandidateActivity {
@@ -20,7 +20,18 @@ export interface CandidateActivity {
   jobTitle: string;
   event: "applied" | "assessment_passed" | "interview_completed" | "offer_sent" | "waitlisted";
   matchScore: number;
-  occurredAt: string; // ISO date
+  occurredAt: string;
+}
+
+export interface RecruiterRecentApplication {
+  id: string;
+  candidateName: string;
+  jobTitle: string;
+  matchScore: number;
+  quizScore: number | null;
+  interviewScore: number | null;
+  status: string;
+  appliedAt: string;
 }
 
 export interface RecruiterDashboard {
@@ -28,46 +39,19 @@ export interface RecruiterDashboard {
   companyName: string;
   stats: {
     activeJobs: number;
-    newApplications: number;
+    totalApplicants: number;
+    candidatesInQuiz: number;
+    quizPassed: number;
     candidatesInInterview: number;
+    interviewsCompleted: number;
+    shortlisted: number;
+    rejected: number;
+    pendingReviews: number;
+    newApplications: number;
     offersSent: number;
   };
   hiringFunnel: HiringFunnelStage[];
   activeJobsSummary: RecruiterActiveJob[];
+  recentApplications: RecruiterRecentApplication[];
   recentActivity: CandidateActivity[];
 }
-
-/** Full editable job posting, owned entirely by the recruiter side —
- * distinct from lib/types/job.ts, which is the student-facing browse view. */
-export interface JobThresholds {
-  matchThreshold: number; // % SBERT match required to proceed to assessment
-  assessmentPassThreshold: number; // % required to proceed to interview
-  interviewEnabled: boolean;
-}
-
-export interface RecruiterJobPosting {
-  id: string;
-  title: string;
-  department: string;
-  location: string;
-  workMode: "remote" | "hybrid" | "onsite";
-  employmentType: "full_time" | "internship" | "contract";
-  experienceLevel: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  requiredSkills: string[];
-  preferredSkills: string[];
-  responsibilities: string[];
-  description: string;
-  thresholds: JobThresholds;
-  status: "open" | "paused" | "closed";
-  applicantsCount: number;
-  newApplicantsCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type RecruiterJobFormInput = Omit<
-  RecruiterJobPosting,
-  "id" | "status" | "applicantsCount" | "newApplicantsCount" | "createdAt" | "updatedAt"
->;

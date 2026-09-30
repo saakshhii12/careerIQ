@@ -25,7 +25,7 @@ export function RecentActivity({ activity }: { activity: CandidateActivity[] }) 
   return (
     <GlassCard className="flex flex-col">
       <div className="mb-4">
-        <h3 className="text-sm font-medium text-white">Recent activity</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text)]">Recent activity</h3>
         <p className="text-sm text-[var(--color-text-muted)]">Latest candidate movement across your pipeline.</p>
       </div>
 
@@ -35,11 +35,11 @@ export function RecentActivity({ activity }: { activity: CandidateActivity[] }) 
           const Icon = meta.icon;
           return (
             <div key={a.id} className="flex items-start gap-3 py-2.5">
-              <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]", meta.tone)}>
+              <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-muted)]", meta.tone)}>
                 <Icon size={15} strokeWidth={1.75} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white">
+                <p className="text-sm text-[var(--color-text)]">
                   <span className="font-medium">{a.candidateName}</span>{" "}
                   <span className="text-[var(--color-text-muted)]">{meta.label}</span>{" "}
                   <span className="font-medium">{a.jobTitle}</span>

@@ -5,5 +5,10 @@ export interface CompanyProfile {
   size: string;
   location: string;
   description: string;
+  email?: string;
   logoUrl?: string;
+  recruiterName?: string;
+  recruiterEmail?: string;
+  recruiterPhone?: string;
+  recruiterDesignation?: string;
 }

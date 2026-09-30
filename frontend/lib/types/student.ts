@@ -11,12 +11,28 @@ export interface SkillGap {
   required: number; // 0-100 required by target roles
 }
 
+export type ApplicationStageKey =
+  | "applied"
+  | "assessment"
+  | "assessment_passed"
+  | "interview"
+  | "review"
+  | "shortlisted"
+  | "accepted"
+  | "rejected";
+
 export interface ApplicationSummary {
   id: string;
   jobTitle: string;
   company: string;
-  stage: "applied" | "assessment" | "interview" | "accepted" | "rejected" | "waitlisted";
-  matchScore: number;
+  stage: ApplicationStageKey;
+  /** The raw applications.status value from PostgreSQL. */
+  status: string;
+  matchScore: number | null;
+  quizPassed: boolean;
+  quizScore: number | null;
+  interviewStatus: string | null;
+  recruiterChatUnlocked: boolean;
   updatedAt: string; // ISO date
 }
 
@@ -36,10 +52,30 @@ export interface WeeklyActivityPoint {
 export interface StudentDashboard {
   studentName: string;
   targetRole: string;
+  profileComplete: boolean;
+  hasResume: boolean;
   score: CareerIQScoreBreakdown;
   skillGaps: SkillGap[];
   applications: ApplicationSummary[];
   roadmap: RoadmapMilestone[];
   weeklyActivity: WeeklyActivityPoint[];
-  notifications: { id: string; message: string; read: boolean; createdAt: string }[];
+  notifications: {
+    id: string;
+    type: string;
+    message: string;
+    read: boolean;
+    createdAt: string;
+    href?: string | null;
+  }[];
+  unreadNotificationCount: number;
+  /** Number of applications where a passing interview has shortlisted the candidate. */
+  recruiterChatUnlockedCount: number;
+  upcomingInterviews: {
+    sessionId: number;
+    jobTitle: string;
+    company: string;
+    status: string;
+    overallScore?: number;
+    interviewDate?: string | null;
+  }[];
 }

@@ -3,25 +3,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap",
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap",
   {
     variants: {
       variant: {
         primary:
-          "bg-[var(--color-accent)] text-[#0b1424] hover:shadow-[0_0_28px_-4px_var(--color-accent)] hover:brightness-110",
+          "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-dim)]",
         secondary:
-          "glass text-white hover:border-[var(--color-accent)]/50 hover:shadow-[0_0_20px_-6px_var(--color-accent-soft)]",
+          "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-bg-elevated)]",
         ghost:
-          "text-[var(--color-text-muted)] hover:text-white hover:bg-white/5",
+          "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)]",
         outline:
-          "border border-[var(--color-accent)]/40 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 hover:border-[var(--color-accent)]",
+          "border border-[var(--color-border-strong)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-bg-elevated)]",
         danger:
-          "bg-[var(--color-danger)]/15 text-[var(--color-danger)] border border-[var(--color-danger)]/30 hover:bg-[var(--color-danger)]/25",
+          "border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10",
       },
       size: {
-        sm: "h-9 px-4 text-sm",
-        md: "h-11 px-6 text-sm",
-        lg: "h-13 px-8 text-base",
+        sm: "h-8 px-3 text-xs",
+        md: "h-9 px-4 text-sm",
+        lg: "h-10 px-5 text-sm",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

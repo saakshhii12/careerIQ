@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   CareerIQ Design Tokens
-   Dark futuristic / cyber-dashboard system. This file is the single source
-   of truth for color, radius, shadow and grid treatment. Every component
-   should consume these tokens rather than hardcoding hex values, so the
-   whole app stays visually consistent as pages are added.
+   CareerIQ — Professional recruitment platform design system
+   Neutral surfaces, restrained accent, no glassmorphism / neon treatment
    ========================================================================== */
 
 :root {
-  /* Core surfaces */
-  --color-bg: #16253f;         /* outer canvas, slightly deeper than the panel tone below it for depth */
-  --color-bg-primary: #20365d; /* primary surface tone (spec) */
-  --color-bg-secondary: #263e68; /* secondary / card surface tone (spec) */
-  --color-bg-elevated: #2c4674; /* hover / elevated state, one step up from secondary */
+  --color-bg: #f8f9fa;
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #ffffff;
+  --color-bg-elevated: #f3f4f6;
+  --color-bg-muted: #f9fafb;
 
-  /* Accent */
-  --color-accent: #64d2c8;
-  --color-accent-soft: #64d2c840; /* 25% alpha, for glows and washes */
-  --color-accent-dim: #4fa89f;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
 
-  /* Text */
-  --color-text: #ffffff;
-  --color-text-muted: #a9b8d1;
-  --color-text-faint: #6b7ea3;
+  --color-accent: #4f46e5;
+  --color-accent-soft: rgba(79, 70, 229, 0.08);
+  --color-accent-dim: #4338ca;
+  --color-accent-foreground: #ffffff;
 
-  /* Status (derived to sit naturally in the same navy/teal system) */
-  --color-success: #52e0b0;
-  --color-warning: #f0c05a;
-  --color-danger: #f2707a;
+  --color-text: #171717;
+  --color-text-muted: #6b7280;
+  --color-text-faint: #9ca3af;
 
-  /* Structure */
-  --radius-card: 16px;
-  --radius-control: 10px;
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-strong: rgba(255, 255, 255, 0.14);
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
 
-  /* Grid overlay */
-  --grid-line: rgba(100, 210, 200, 0.06);
-  --grid-size: 44px;
+  --radius-card: 8px;
+  --radius-control: 6px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  --font-inter: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono-tech: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
 }
 
 @theme inline {
@@ -66,80 +66,73 @@ body {
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter);
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Always-visible blueprint grid. Applied as a fixed background layer so it
-   reads consistently behind every page without each page reimplementing it. */
-.bg-grid {
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-}
-
-.bg-radial-glow {
-  background-image: radial-gradient(
-    circle at 50% -10%,
-    rgba(100, 210, 200, 0.16),
-    transparent 55%
-  );
-}
-
-/* Glassmorphism card primitive */
-.glass {
-  background: linear-gradient(
-    180deg,
-    rgba(38, 62, 104, 0.55) 0%,
-    rgba(32, 54, 93, 0.45) 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
-    0 8px 24px -8px rgba(0, 0, 0, 0.5);
+/* Legacy class names kept for compatibility — now map to clean surfaces */
+.glass,
+.surface-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .glow-border {
-  box-shadow: 0 0 0 1px var(--border-glass-strong), 0 0 24px -6px var(--color-accent-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.bg-grid,
+.bg-radial-glow {
+  background-image: none;
 }
 
 .text-glow {
-  text-shadow: 0 0 20px var(--color-accent-soft);
+  text-shadow: none;
 }
 
 ::selection {
-  background: var(--color-accent);
-  color: #0b1424;
+  background: var(--color-accent-soft);
+  color: var(--color-text);
 }
 
-/* Thin, teal-tinted scrollbars fit the terminal aesthetic better than the
-   OS default. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-accent-dim) transparent;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
+
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
 *::-webkit-scrollbar-thumb {
-  background: var(--color-accent-dim);
+  background: var(--color-border-strong);
   border-radius: 999px;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.animate-pulse-glow {
-  animation: pulse-glow 2.4s ease-in-out infinite;
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Terminal,
   LayoutDashboard,
   FileText,
-  Target,
-  MessageCircle,
-  User,
   Briefcase,
+  ListChecks,
+  MessageSquare,
+  Sparkles,
+  User,
   Users,
   Building2,
-  BarChart3,
-  ListChecks,
   Bell,
+  Settings,
+  Star,
+  Video,
+  LogOut,
+  Route,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 
 interface NavItem {
   href: string;
@@ -25,65 +29,95 @@ interface NavItem {
   icon: LucideIcon;
 }
 
+// Career Assistant (AI guidance) and Recruiter Messages (human, shortlist-gated)
+// are separate entries on purpose — neither is labelled just "Chat".
 const STUDENT_NAV: NavItem[] = [
   { href: "/student", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/student/applications", label: "Applications", icon: Target },
-  { href: "/student/status", label: "My Applications", icon: ListChecks },
-  { href: "/student/resume", label: "Resume", icon: FileText },
+  { href: "/student/applications", label: "Jobs", icon: Briefcase },
+  { href: "/student/status", label: "Applications", icon: ListChecks },
   { href: "/student/profile", label: "Profile", icon: User },
-  { href: "/student/chat", label: "Chat", icon: MessageCircle },
-  { href: "/student/notifications", label: "Notifications", icon: Bell },
+  { href: "/student/resume", label: "Resume", icon: FileText },
+  { href: "/student/roadmap", label: "Roadmap", icon: Route },
+  { href: "/student/chat", label: "Career Assistant", icon: Sparkles },
+  { href: "/student/messages", label: "Recruiter Messages", icon: MessageSquare },
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", label: "Recruiter allotment", icon: Users },
 ];
 
 const RECRUITER_NAV: NavItem[] = [
-  { href: "/recruiter", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/recruiter/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/recruiter/jobs", label: "Jobs", icon: Briefcase },
   { href: "/recruiter/candidates", label: "Candidates", icon: Users },
+  { href: "/recruiter/applications", label: "Applications", icon: ListChecks },
+  { href: "/recruiter/interviews", label: "Interviews", icon: Video },
+  { href: "/recruiter/shortlisted", label: "Shortlisted", icon: Star },
+  { href: "/recruiter/messages", label: "Messages", icon: MessageSquare },
+  { href: "/recruiter/notifications", label: "Notifications", icon: Bell },
   { href: "/recruiter/company", label: "Company Profile", icon: Building2 },
-  { href: "/recruiter/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/recruiter/chat", label: "Chat", icon: MessageCircle },
+  { href: "/recruiter/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({ nav = STUDENT_NAV }: { nav?: NavItem[] }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-[var(--color-bg-primary)]/60 backdrop-blur-lg">
-      <Link href="/" className="flex items-center gap-2 px-6 py-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-accent)]/12 text-[var(--color-accent)]">
-          <Terminal size={16} />
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-primary)]">
+      <Link href="/" className="flex items-center gap-2.5 border-b border-[var(--color-border)] px-5 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-accent)] text-xs font-bold text-white">
+          CQ
         </div>
-        <span className="font-mono text-sm font-semibold text-white">careerIQ</span>
+        <span className="text-sm font-semibold text-[var(--color-text)]">CareerIQ</span>
       </Link>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className="flex flex-1 flex-col gap-0.5 p-3">
         {nav.map((item) => {
-          const isRoot = item.href === "/student" || item.href === "/recruiter";
-          const active = isRoot ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/");
+          const isRoot =
+            item.href === "/student" ||
+            item.href === "/recruiter/dashboard" ||
+            item.href === "/admin";
+          const active = isRoot
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150",
+                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-[var(--color-accent)]/12 text-[var(--color-accent)] shadow-[inset_0_0_0_1px_var(--color-accent-soft)]"
-                  : "text-[var(--color-text-muted)] hover:bg-white/5 hover:text-white"
+                  ? "bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-dim)]"
+                  : "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)]"
               )}
             >
-              <item.icon size={17} strokeWidth={1.75} />
+              <item.icon size={16} strokeWidth={1.75} />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/[0.06] px-6 py-5">
-        <span className="font-mono text-xs text-[var(--color-text-faint)]">v0.1.0 · mock data</span>
+      <div className="border-t border-[var(--color-border)] p-4">
+        {user && (
+          <div className="mb-3">
+            <p className="truncate text-sm font-medium text-[var(--color-text)]">{user.full_name}</p>
+            <p className="truncate text-xs text-[var(--color-text-faint)]">{user.email}</p>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={logout}
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text)]"
+        >
+          <LogOut size={15} />
+          Sign out
+        </button>
       </div>
     </aside>
   );
 }
 
-export { STUDENT_NAV, RECRUITER_NAV };
+export { STUDENT_NAV, RECRUITER_NAV, ADMIN_NAV };
 export type { NavItem };

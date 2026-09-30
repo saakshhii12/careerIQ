@@ -1,41 +1,43 @@
 import { ResumeState } from "@/lib/types/resume";
-import { USE_MOCK_API } from "./config";
-import { apiClient } from "./client";
-
-// In-memory mock store so the status persists across the query cache
-// within a session, similar to how a real backend would persist it.
-let mockResumeState: ResumeState = { status: "none" };
+import { BACKEND_URL, getToken } from "./config";
+import { getBackendProfile } from "./profile";
+import { extractTextFromPDF } from "@/lib/resume/pdf";
 
 export async function getResumeStatus(): Promise<ResumeState> {
-  if (USE_MOCK_API) {
-    return { ...mockResumeState };
+  const data = await getBackendProfile();
+  if (!data.resume?.resume_name) {
+    return { status: "none" };
   }
-  return apiClient<ResumeState>("/students/me/resume");
+  return {
+    status: "complete",
+    fileName: data.resume.resume_name,
+    uploadedAt: data.resume.uploaded_at,
+  };
 }
 
 export async function uploadResume(file: File): Promise<ResumeState> {
-  if (USE_MOCK_API) {
-    mockResumeState = { status: "uploading", fileName: file.name };
-    await new Promise((r) => setTimeout(r, 700));
-    mockResumeState = { ...mockResumeState, status: "analyzing" };
-    await new Promise((r) => setTimeout(r, 1600));
-    mockResumeState = {
-      status: "complete",
-      fileName: file.name,
-      uploadedAt: new Date().toISOString(),
-    };
-    // Real backend: PyMuPDF extracts text -> SBERT/skill parser fills the
-    // student profile server-side. None of that payload is returned here.
-    return { ...mockResumeState };
+  const extractedText = await extractTextFromPDF(file);
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("resume", file);
+  formData.append("extractedText", extractedText);
+
+  const res = await fetch(`${BACKEND_URL}/api/candidate/resume`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((body as { error?: string }).error ?? "Resume upload failed.");
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-  // apiClient assumes JSON; a real implementation would use a raw fetch
-  // with FormData and no Content-Type header (browser sets the boundary).
-  return apiClient<ResumeState>("/students/me/resume", {
-    method: "POST",
-    body: formData as unknown as BodyInit,
-    headers: {},
-  });
+  return {
+    status: "complete",
+    fileName: (body as { resume?: { resume_name?: string } }).resume?.resume_name ?? file.name,
+    uploadedAt: new Date().toISOString(),
+  };
 }

@@ -1,11 +1,10 @@
 import { query } from "../db.js";
-
-function normalizeSkill(name) {
-  return String(name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9+#.\s-]/g, "")
-    .trim();
-}
+import {
+  extractSkillsFromText,
+  getSkillCatalog,
+  inferSkillsFromJob,
+  normalizeSkill,
+} from "./job-skill-extraction.js";
 
 function uniqueSkills(skills) {
   const seen = new Set();
@@ -19,29 +18,13 @@ function uniqueSkills(skills) {
   return result;
 }
 
-function extractSkillsFromText(text, catalog) {
-  const lower = String(text || "").toLowerCase();
-  const found = [];
-  for (const skill of catalog) {
-    const name = normalizeSkill(skill.skill_name);
-    if (name && lower.includes(name)) {
-      found.push(skill.skill_name);
-    }
-  }
-  return found;
-}
-
-async function getSkillCatalog() {
-  const { rows } = await query("SELECT skill_id, skill_name, category FROM skills ORDER BY skill_name");
-  return rows;
-}
-
 async function getJobRequiredSkills(jobId, jobDescription, jobTitle) {
   const linked = await query(
     `SELECT s.skill_name
      FROM job_skills js
      JOIN skills s ON s.skill_id = js.skill_id
-     WHERE js.job_id = $1`,
+     WHERE js.job_id = $1 AND COALESCE(js.is_required, true) = true
+     ORDER BY s.skill_name`,
     [jobId]
   );
 
@@ -50,8 +33,11 @@ async function getJobRequiredSkills(jobId, jobDescription, jobTitle) {
   }
 
   const catalog = await getSkillCatalog();
-  const fromText = extractSkillsFromText(`${jobTitle} ${jobDescription}`, catalog);
-  return fromText;
+  return inferSkillsFromJob(
+    { job_id: jobId, job_title: jobTitle, description: jobDescription },
+    catalog,
+    { useQwen: false }
+  );
 }
 
 async function getCandidateSkills(studentId, parsedResume = null) {

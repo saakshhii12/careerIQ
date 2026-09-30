@@ -20,12 +20,12 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-8">
         <Link
           href="/recruiter/jobs"
-          className="inline-flex w-fit items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-white"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
         >
           <ArrowLeft size={14} /> Back to jobs
         </Link>
 
-        {isLoading && <div className="h-96 animate-pulse rounded-[var(--radius-card)] bg-white/[0.04]" />}
+        {isLoading && <div className="h-96 animate-pulse rounded-[var(--radius-card)] bg-[var(--color-bg-elevated)]" />}
 
         {job && (
           <JobForm

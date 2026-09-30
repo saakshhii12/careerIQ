@@ -23,8 +23,8 @@ export function PhotoUpload({
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
         className={cn(
-          "group relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]",
-          "transition-all duration-200 hover:border-[var(--color-accent)]/50"
+          "group relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-muted)]",
+          "transition-colors hover:border-[var(--color-accent)]"
         )}
       >
         {photoUrl ? (
@@ -33,7 +33,7 @@ export function PhotoUpload({
           <User size={40} className="text-[var(--color-text-faint)]" strokeWidth={1.5} />
         )}
 
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           {isUploading ? (
             <Loader2 size={20} className="animate-spin text-white" />
           ) : (

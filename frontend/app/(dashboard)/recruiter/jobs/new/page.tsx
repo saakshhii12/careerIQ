@@ -17,7 +17,7 @@ export default function NewJobPage() {
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-8">
         <Link
           href="/recruiter/jobs"
-          className="inline-flex w-fit items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-white"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
         >
           <ArrowLeft size={14} /> Back to jobs
         </Link>

@@ -12,14 +12,14 @@ const LINKS = [
 
 export function LandingNavbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[var(--color-bg)]/70 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-accent)]/12 text-[var(--color-accent)]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
             <Terminal size={16} strokeWidth={2} />
           </div>
-          <span className="font-mono text-sm font-semibold tracking-wide text-white">
-            careerIQ
+          <span className="text-sm font-semibold tracking-tight text-[var(--color-text)]">
+            CareerIQ
           </span>
         </Link>
 
@@ -28,7 +28,7 @@ export function LandingNavbar() {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-white"
+              className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
             >
               {link.label}
             </a>

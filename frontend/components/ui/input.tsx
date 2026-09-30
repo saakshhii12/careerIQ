@@ -12,7 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-[var(--color-text-muted)]">
+          <label htmlFor={inputId} className="text-sm font-medium text-[var(--color-text)]">
             {label}
           </label>
         )}
@@ -20,10 +20,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "h-11 rounded-[var(--radius-control)] bg-white/[0.04] border border-white/10 px-4 text-sm text-white placeholder:text-[var(--color-text-faint)]",
-            "outline-none transition-all duration-150",
-            "focus:border-[var(--color-accent)] focus:shadow-[0_0_0_3px_var(--color-accent-soft)]",
-            error && "border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:shadow-[0_0_0_3px_rgba(242,112,122,0.2)]",
+            "h-9 rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-faint)]",
+            "outline-none transition-colors focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent-soft)]",
+            error && "border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger-soft)]",
             className
           )}
           {...props}

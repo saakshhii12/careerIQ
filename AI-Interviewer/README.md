@@ -1,16 +1,26 @@
-# React + Vite
+# AI-Interviewer (LEGACY)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **This folder is not the production CareerIQ application.**  
+> Use **`frontend/`** (Next.js) for the real student, recruiter, and admin experience.
 
-Currently, two official plugins are available:
+Standalone Vite + React app used during early development of the AI interview UI. It still talks to the same Express backend but calls **legacy** unauthenticated routes:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `POST /api/generate-questions`
+- `POST /api/parse-resume`
+- `POST /api/final-evaluation`
+- `POST /api/chat`
 
-## React Compiler
+Production interviews use authenticated routes under `/api/interviews/*` with resume and job context from PostgreSQL.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Run locally (optional)
 
-## Expanding the ESLint configuration
+```bash
+cd backend && node server.js
+cd AI-Interviewer && npm install && npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Requires the same `backend/.env` (`HF_TOKEN`, etc.) as the main app.
+
+## Removed / unused
+
+- **Google Gemini** — `geminiService.js` was removed; the app never imported it. All LLM calls go through the backend Qwen service.

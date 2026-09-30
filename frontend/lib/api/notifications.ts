@@ -1,26 +1,63 @@
-import { AppNotification } from "@/lib/types/notification";
-import { USE_MOCK_API, mockDelay } from "./config";
+import { AppNotification, NotificationType } from "@/lib/types/notification";
 import { apiClient } from "./client";
-import { MOCK_NOTIFICATIONS } from "./mock/notifications";
 
-export async function getNotifications(): Promise<AppNotification[]> {
-  if (USE_MOCK_API) return mockDelay([...MOCK_NOTIFICATIONS]);
-  return apiClient<AppNotification[]>("/students/me/notifications");
+const KNOWN_TYPES: NotificationType[] = [
+  "application_submitted",
+  "assessment_ready",
+  "assessment_passed",
+  "assessment_failed",
+  "interview_scheduled",
+  "interview_completed",
+  "application_result",
+  "recruiter_message",
+  "system",
+];
+
+interface BackendNotification {
+  id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+function mapNotification(row: BackendNotification): AppNotification {
+  return {
+    id: row.id,
+    type: KNOWN_TYPES.includes(row.type as NotificationType)
+      ? (row.type as NotificationType)
+      : "system",
+    message: row.message,
+    read: row.read,
+    createdAt: row.createdAt,
+    href: row.link,
+  };
+}
+
+export interface NotificationFeed {
+  notifications: AppNotification[];
+  unreadCount: number;
+}
+
+export async function getNotifications(): Promise<NotificationFeed> {
+  const data = await apiClient<{ notifications: BackendNotification[]; unreadCount: number }>(
+    "/notifications"
+  );
+  return {
+    notifications: data.notifications.map(mapNotification),
+    unreadCount: data.unreadCount,
+  };
 }
 
 export async function markNotificationRead(id: string): Promise<AppNotification> {
-  if (USE_MOCK_API) {
-    const n = MOCK_NOTIFICATIONS.find((n) => n.id === id);
-    if (n) n.read = true;
-    return mockDelay(n as AppNotification, 150);
-  }
-  return apiClient<AppNotification>(`/students/me/notifications/${id}/read`, { method: "POST" });
+  const data = await apiClient<{ notification: BackendNotification }>(`/notifications/${id}/read`, {
+    method: "POST",
+  });
+  return mapNotification(data.notification);
 }
 
-export async function markAllNotificationsRead(): Promise<void> {
-  if (USE_MOCK_API) {
-    MOCK_NOTIFICATIONS.forEach((n) => (n.read = true));
-    return;
-  }
-  await apiClient("/students/me/notifications/read-all", { method: "POST" });
+export async function markAllNotificationsRead(): Promise<number> {
+  const data = await apiClient<{ updated: number }>("/notifications/read-all", { method: "POST" });
+  return data.updated;
 }

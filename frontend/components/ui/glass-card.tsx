@@ -7,15 +7,14 @@ export interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
-  ({ className, glow, interactive, ...props }, ref) => {
+  ({ className, glow: _glow, interactive, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          "glass rounded-[var(--radius-card)] p-6",
-          glow && "glow-border",
+          "surface-card rounded-[var(--radius-card)] p-5",
           interactive &&
-            "transition-all duration-200 hover:border-[var(--color-accent)]/40 hover:shadow-[0_0_28px_-8px_var(--color-accent-soft)] cursor-pointer",
+            "cursor-pointer transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-muted)]",
           className
         )}
         {...props}

@@ -3,7 +3,7 @@
 import { GlassCard } from "@/components/ui/glass-card";
 import { CareerIQScoreBreakdown } from "@/lib/types/student";
 
-const RING_COLORS = ["var(--color-accent)", "#8fd9ce", "#c9ecea"];
+const RING_COLORS = ["var(--color-accent)", "#6366f1", "#818cf8"];
 
 function Ring({
   value,
@@ -43,25 +43,25 @@ export function ScoreCard({ score }: { score: CareerIQScoreBreakdown }) {
   ];
 
   return (
-    <GlassCard glow className="flex flex-col items-center gap-6 md:flex-row md:items-start">
+    <GlassCard className="flex flex-col items-center gap-6 md:flex-row md:items-start">
       <div className="relative shrink-0">
         <svg width={220} height={220} viewBox="0 0 220 220">
-          <circle cx={110} cy={110} r={92} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={14} />
-          <circle cx={110} cy={110} r={74} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={14} />
-          <circle cx={110} cy={110} r={56} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={14} />
+          <circle cx={110} cy={110} r={92} fill="none" stroke="var(--color-border)" strokeWidth={14} />
+          <circle cx={110} cy={110} r={74} fill="none" stroke="var(--color-border)" strokeWidth={14} />
+          <circle cx={110} cy={110} r={56} fill="none" stroke="var(--color-border)" strokeWidth={14} />
           {rings.map((r, i) => (
             <Ring key={r.label} value={r.value} radius={r.radius} strokeWidth={14} color={RING_COLORS[i]} />
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-4xl font-semibold text-white">{score.overall}</span>
+          <span className="font-mono text-4xl font-semibold text-[var(--color-text)]">{score.overall}</span>
           <span className="text-xs text-[var(--color-text-muted)]">CareerIQ score</span>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-4">
         <div>
-          <h3 className="text-sm font-medium text-white">Score breakdown</h3>
+          <h3 className="text-sm font-medium text-[var(--color-text)]">Score breakdown</h3>
           <p className="text-sm text-[var(--color-text-muted)]">
             Composite of resume quality, semantic match and company readiness.
           </p>
@@ -74,13 +74,13 @@ export function ScoreCard({ score }: { score: CareerIQScoreBreakdown }) {
           ].map((row) => (
             <div key={row.label} className="flex items-center gap-3">
               <span className="w-32 shrink-0 text-xs text-[var(--color-text-muted)]">{row.label}</span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg-elevated)]">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${row.value}%`, background: row.color }}
                 />
               </div>
-              <span className="w-9 shrink-0 text-right font-mono text-xs text-white">{row.value}</span>
+              <span className="w-9 shrink-0 text-right font-mono text-xs text-[var(--color-text)]">{row.value}</span>
             </div>
           ))}
         </div>

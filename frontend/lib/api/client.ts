@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, getToken } from "./config";
 
 export class ApiError extends Error {
   status: number;
@@ -15,35 +15,57 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
 }
 
 /**
- * Thin fetch wrapper. Not used while USE_MOCK_API is true, but kept fully
- * wired so switching a repository from mock to live is a one-line change:
- *   return mockDelay(MOCK_STUDENT_DASHBOARD)
- * becomes
- *   return apiClient<StudentDashboard>("/students/me/dashboard")
+ * Thin fetch wrapper around the Express backend.
+ *
+ * On failure it surfaces the backend's `{ error }` message so the UI can show
+ * something actionable instead of a generic "Request failed". Network failures
+ * become an ApiError with status 0 rather than an opaque TypeError.
  */
 export async function apiClient<T>(
   path: string,
   { body, auth = true, headers, ...rest }: RequestOptions = {}
 ): Promise<T> {
-  const token = auth && typeof window !== "undefined"
-    ? window.localStorage.getItem("careeriq_access_token")
-    : null;
+  const token = auth ? getToken() : null;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError(
+      "Can't reach the CareerIQ server. Check that the backend is running.",
+      0
+    );
+  }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new ApiError(text || "Request failed", res.status);
+    throw new ApiError(await readErrorMessage(res), res.status);
   }
 
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+  if (text) {
+    try {
+      const parsed = JSON.parse(text) as { error?: string; message?: string };
+      if (parsed.error) return parsed.error;
+      if (parsed.message) return parsed.message;
+    } catch {
+      // Not JSON — fall through to the status-based message below.
+    }
+  }
+  if (res.status === 401) return "Your session has expired. Sign in again.";
+  if (res.status === 403) return "You do not have permission for this action.";
+  if (res.status === 404) return "That resource could not be found.";
+  return `Request failed (${res.status}).`;
 }

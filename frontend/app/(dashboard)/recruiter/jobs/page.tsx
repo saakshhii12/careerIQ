@@ -33,14 +33,14 @@ export default function RecruiterJobsPage() {
 
       <div className="flex flex-col gap-6 p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+          <div className="flex gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-1">
             {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-all duration-150",
-                  filter === f ? "bg-[var(--color-accent)] text-[#0b1424]" : "text-[var(--color-text-muted)] hover:text-white"
+                  filter === f ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                 )}
               >
                 {f}
@@ -57,7 +57,7 @@ export default function RecruiterJobsPage() {
         {isLoading && (
           <div className="flex flex-col gap-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-24 animate-pulse rounded-[var(--radius-card)] bg-white/[0.04]" />
+              <div key={i} className="h-24 animate-pulse rounded-[var(--radius-card)] bg-[var(--color-bg-elevated)]" />
             ))}
           </div>
         )}
@@ -78,7 +78,7 @@ export default function RecruiterJobsPage() {
               <GlassCard key={job.id} className="flex flex-wrap items-center justify-between gap-4">
                 <Link href={`/recruiter/jobs/${job.id}`} className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
-                    <h3 className="truncate text-base font-medium text-white hover:text-[var(--color-accent)]">
+                    <h3 className="truncate text-base font-medium text-[var(--color-text)] hover:text-[var(--color-accent)]">
                       {job.title}
                     </h3>
                     <Badge tone={meta.tone}>{meta.label}</Badge>
@@ -91,11 +91,11 @@ export default function RecruiterJobsPage() {
                 <div className="flex items-center gap-6">
                   <span className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
                     <Users size={14} />
-                    {job.applicantsCount}
-                    {job.newApplicantsCount > 0 && (
-                      <span className="text-[var(--color-accent)]">+{job.newApplicantsCount} new</span>
-                    )}
+                    {job.applicantsCount} applicants
                   </span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{job.qualifiedCount ?? 0} qualified</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{job.interviewsCount ?? 0} interviews</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{job.shortlistedCount ?? 0} shortlisted</span>
 
                   <div className="flex gap-2">
                     {job.status === "open" && (
@@ -123,6 +123,15 @@ export default function RecruiterJobsPage() {
                         onClick={() => statusMutation.mutate({ id: job.id, status: "closed" })}
                       >
                         <XCircle size={13} /> Close
+                      </Button>
+                    )}
+                    {job.status === "closed" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => statusMutation.mutate({ id: job.id, status: "open" })}
+                      >
+                        <Play size={13} /> Reopen
                       </Button>
                     )}
                   </div>

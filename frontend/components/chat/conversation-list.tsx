@@ -1,24 +1,24 @@
 "use client";
 
-import { MessageCircle, Lock } from "lucide-react";
+import { Lock, MessageSquare, Unlock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Conversation } from "@/lib/types/chat";
+import { RecruiterThread } from "@/lib/types/chat";
 
 export function ConversationList({
-  conversations,
+  threads,
   activeId,
   onSelect,
 }: {
-  conversations: Conversation[];
+  threads: RecruiterThread[];
   activeId?: string;
-  onSelect: (conversation: Conversation) => void;
+  onSelect: (thread: RecruiterThread) => void;
 }) {
-  if (conversations.length === 0) {
+  if (threads.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-        <MessageCircle size={24} className="text-[var(--color-text-faint)]" />
+        <MessageSquare size={22} className="text-[var(--color-text-faint)]" />
         <p className="text-sm text-[var(--color-text-muted)]">
-          No conversations yet. Chats unlock once a recruiter accepts your application.
+          Apply to a role to start tracking recruiter conversations.
         </p>
       </div>
     );
@@ -26,26 +26,34 @@ export function ConversationList({
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      {conversations.map((c) => {
-        const lastMessage = c.messages[c.messages.length - 1];
+      {threads.map((thread) => {
+        const lastMessage = thread.messages[thread.messages.length - 1];
+        const active = activeId === thread.id;
         return (
           <button
-            key={c.id}
-            onClick={() => c.unlocked && onSelect(c)}
-            disabled={!c.unlocked}
+            key={thread.id}
+            type="button"
+            onClick={() => onSelect(thread)}
             className={cn(
-              "flex flex-col gap-1 border-b border-white/[0.05] px-4 py-3.5 text-left transition-colors",
-              !c.unlocked && "cursor-not-allowed opacity-50",
-              c.unlocked && activeId === c.id ? "bg-[var(--color-accent)]/8" : c.unlocked && "hover:bg-white/[0.03]"
+              "flex flex-col gap-1 border-b border-[var(--color-border)] px-4 py-3.5 text-left transition-colors last:border-0",
+              active ? "bg-[var(--color-accent-soft)]" : "hover:bg-[var(--color-bg-muted)]"
             )}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-medium text-white">{c.company}</span>
-              {!c.unlocked && <Lock size={13} className="shrink-0 text-[var(--color-text-faint)]" />}
+              <span className="truncate text-sm font-medium text-[var(--color-text)]">{thread.company}</span>
+              {thread.unlocked ? (
+                <Unlock size={13} className="shrink-0 text-[var(--color-success)]" />
+              ) : (
+                <Lock size={13} className="shrink-0 text-[var(--color-text-faint)]" />
+              )}
             </div>
-            <span className="truncate text-xs text-[var(--color-text-faint)]">{c.jobTitle}</span>
+            <span className="truncate text-xs text-[var(--color-text-faint)]">{thread.jobTitle}</span>
             <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
-              {c.unlocked ? lastMessage?.text ?? "No messages yet" : "Chat unlocks after acceptance"}
+              {thread.applicationStatus === "Rejected"
+                ? "Rejected"
+                : thread.unlocked
+                  ? (lastMessage?.text ?? "No messages yet — say hello")
+                  : `Locked · ${thread.applicationStatus}`}
             </p>
           </button>
         );

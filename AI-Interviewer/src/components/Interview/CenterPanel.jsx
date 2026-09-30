@@ -7,11 +7,15 @@ const CenterPanel = ({
   question,
   questionNumber,
   totalQuestions,
+  questionSecondsRemaining,
+  jobTitle,
   onSubmitAnswer,
   loading,
   paused,
   sessionStatus,
   onMicStatusChange,
+  forceSubmitToken,
+  onPermissionActivity,
 }) => {
   return (
     <motion.div
@@ -25,14 +29,20 @@ const CenterPanel = ({
         question={question}
         questionNumber={questionNumber}
         totalQuestions={totalQuestions}
+        secondsRemaining={questionSecondsRemaining}
+        jobTitle={jobTitle}
       />
 
       <AnswerBox
+        key={questionNumber}
+        questionKey={questionNumber}
+        forceSubmitToken={forceSubmitToken}
         onSubmitAnswer={onSubmitAnswer}
         loading={loading}
         paused={paused}
         disabled={sessionStatus !== "RUNNING"}
         onMicStatusChange={onMicStatusChange}
+        onPermissionActivity={onPermissionActivity}
       />
     </motion.div>
   );

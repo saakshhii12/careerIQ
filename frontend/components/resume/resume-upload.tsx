@@ -10,15 +10,15 @@ import { ResumeState } from "@/lib/types/resume";
 const STATUS_COPY: Record<ResumeState["status"], { title: string; body: string }> = {
   none: {
     title: "Upload your resume",
-    body: "PDF only, up to 5MB. We'll take it from there.",
+    body: "PDF only, up to 5MB. We'll extract key details for your profile.",
   },
   uploading: {
     title: "Uploading…",
     body: "Hang tight, your file is on its way.",
   },
   analyzing: {
-    title: "Analyzing your resume",
-    body: "Our AI is reading your resume and updating your profile in the background.",
+    title: "Processing your resume",
+    body: "We're reading your resume and updating your profile in the background.",
   },
   complete: {
     title: "Resume received",
@@ -54,7 +54,7 @@ export function ResumeUpload({
   );
 
   return (
-    <GlassCard glow className="mx-auto flex max-w-xl flex-col items-center gap-6 !p-10 text-center">
+    <GlassCard className="mx-auto flex max-w-xl flex-col items-center gap-6 !p-10 text-center">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -68,8 +68,8 @@ export function ResumeUpload({
         }}
         onClick={() => !isProcessing && inputRef.current?.click()}
         className={cn(
-          "flex w-full cursor-pointer flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-8 py-12 transition-colors",
-          dragOver ? "border-[var(--color-accent)] bg-[var(--color-accent)]/5" : "border-white/15",
+          "flex w-full cursor-pointer flex-col items-center gap-4 rounded-xl border-2 border-dashed px-8 py-12 transition-colors",
+          dragOver ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]" : "border-[var(--color-border)]",
           isProcessing && "pointer-events-none opacity-80"
         )}
       >
@@ -81,7 +81,7 @@ export function ResumeUpload({
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
 
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-accent)]/12 text-[var(--color-accent)]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
           {state.status === "complete" ? (
             <CheckCircle2 size={28} />
           ) : isProcessing ? (
@@ -92,12 +92,12 @@ export function ResumeUpload({
         </div>
 
         <div>
-          <h3 className="text-base font-medium text-white">{copy.title}</h3>
+          <h3 className="text-base font-medium text-[var(--color-text)]">{copy.title}</h3>
           <p className="mt-1 max-w-sm text-sm text-[var(--color-text-muted)]">{copy.body}</p>
         </div>
 
         {state.fileName && (
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 py-1.5 text-xs text-[var(--color-text-muted)]">
             <FileText size={13} />
             {state.fileName}
           </div>

@@ -15,7 +15,7 @@ export function RoadmapTimeline({ milestones }: { milestones: RoadmapMilestone[]
   return (
     <GlassCard className="flex flex-col">
       <div className="mb-4">
-        <h3 className="text-sm font-medium text-white">Career roadmap</h3>
+        <h3 className="text-sm font-medium text-[var(--color-text)]">Career roadmap</h3>
         <p className="text-sm text-[var(--color-text-muted)]">Your personalized path to target-role readiness.</p>
       </div>
       <div className="flex flex-col gap-1">
@@ -33,13 +33,13 @@ export function RoadmapTimeline({ milestones }: { milestones: RoadmapMilestone[]
                     m.status === "upcoming" && "text-[var(--color-text-faint)]"
                   )}
                 />
-                {i < milestones.length - 1 && <div className="mt-1 h-full min-h-6 w-px bg-white/[0.08]" />}
+                {i < milestones.length - 1 && <div className="mt-1 h-full min-h-6 w-px bg-[var(--color-border)]" />}
               </div>
               <div className="pb-1">
                 <p
                   className={cn(
                     "text-sm",
-                    m.status === "upcoming" ? "text-[var(--color-text-muted)]" : "text-white"
+                    m.status === "upcoming" ? "text-[var(--color-text-muted)]" : "text-[var(--color-text)]"
                   )}
                 >
                   {m.title}

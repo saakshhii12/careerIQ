@@ -34,6 +34,9 @@ async function loadUserContext(userId) {
       [userId]
     );
     profile = recruiterResult.rows[0] || null;
+  } else if (user.role === "admin") {
+    const adminResult = await query("SELECT * FROM admins WHERE user_id = $1", [userId]);
+    profile = adminResult.rows[0] || null;
   }
 
   return { ...user, profile };
@@ -112,9 +115,12 @@ router.post("/register", async (req, res) => {
         [user.user_id, collegeName || null, degree || null, specialization || null, graduationYear || null, phone || null, city || null]
       );
     } else {
+      if (!companyId) {
+        return res.status(400).json({ error: "Select the company you recruit for." });
+      }
       await query(
         "INSERT INTO recruiters (user_id, designation, phone, company_id) VALUES ($1, $2, $3, $4)",
-        [user.user_id, designation || null, phone || null, companyId || null]
+        [user.user_id, designation || null, phone || null, companyId]
       );
     }
 
@@ -124,6 +130,25 @@ router.post("/register", async (req, res) => {
   } catch (error) {
     console.error("Register error:", error.message);
     return res.status(500).json({ error: "Unable to create account right now." });
+  }
+});
+
+router.get("/companies", async (_req, res) => {
+  try {
+    const result = await query(
+      "SELECT company_id, company_name, industry, location FROM companies ORDER BY company_name"
+    );
+    return res.json({
+      companies: result.rows.map((row) => ({
+        companyId: row.company_id,
+        companyName: row.company_name,
+        industry: row.industry,
+        location: row.location,
+      })),
+    });
+  } catch (error) {
+    console.error("Companies list error:", error.message);
+    return res.status(500).json({ error: "Unable to load companies." });
   }
 });
 
