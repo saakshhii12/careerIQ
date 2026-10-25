@@ -1,5 +1,8 @@
-import { FaceDetector, FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
-import * as cocoSsd from "@tensorflow-models/coco-ssd";
+// Heavy vision libraries are loaded lazily inside createIntegrityMonitor so
+// they are excluded from the initial bundle and only downloaded when an
+// interview session actually starts.
+type MediapipeTasks = typeof import("@mediapipe/tasks-vision");
+type CocoSsd = typeof import("@tensorflow-models/coco-ssd");
 
 /**
  * Client-side camera integrity using pretrained browser models.
@@ -65,12 +68,18 @@ export async function createIntegrityMonitor(
   onStatus?.("starting");
   await waitForVideo(video);
 
-  let faceDetector: FaceDetector | null = null;
-  let faceLandmarker: FaceLandmarker | null = null;
-  let phoneModel: Awaited<ReturnType<typeof cocoSsd.load>> | null = null;
+  // Lazily import heavy ML libraries — they are excluded from the initial JS
+  // bundle and downloaded only when this function is actually called.
+  let faceDetector: MediapipeTasks["FaceDetector"]["prototype"] | null = null;
+  let faceLandmarker: MediapipeTasks["FaceLandmarker"]["prototype"] | null = null;
+  let phoneModel: Awaited<ReturnType<CocoSsd["load"]>> | null = null;
   let modelsReady = false;
 
   try {
+    const [{ FaceDetector, FaceLandmarker, FilesetResolver }, cocoSsd] = await Promise.all([
+      import("@mediapipe/tasks-vision"),
+      import("@tensorflow-models/coco-ssd"),
+    ]);
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
     );

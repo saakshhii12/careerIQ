@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   ApplicationRoadmap,
   CourseRecommendation,
+  generateInterviewRoadmap,
   getSkillCourses,
   getSkillGaps,
+  InterviewLearningRoadmap,
 } from "@/lib/api/skill-courses";
 import { ApiError } from "@/lib/api/client";
 
@@ -56,8 +58,24 @@ function SkillCoursesPanel({
   );
 
   useEffect(() => {
-    void load(false);
-  }, [load]);
+    let cancelled = false;
+    getSkillCourses(skill, { applicationId })
+      .then((result) => {
+        if (!cancelled) setCourses(result.courses.slice(0, 5));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(coursesErrorMessage(err));
+          setCourses([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId, skill]);
 
   return (
     <div className="mt-2 space-y-3">
@@ -109,14 +127,108 @@ function SkillCoursesPanel({
   );
 }
 
+function InterviewRoadmapPanel({ applicationId }: { applicationId: string }) {
+  const [roadmap, setRoadmap] = useState<InterviewLearningRoadmap["roadmap"] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await generateInterviewRoadmap(applicationId);
+      setRoadmap(result.roadmap);
+    } catch (err) {
+      setRoadmap(null);
+      setError(err instanceof Error ? err.message : "Unable to generate your learning roadmap.");
+    } finally {
+      setLoading(false);
+    }
+  }, [applicationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    generateInterviewRoadmap(applicationId)
+      .then((result) => {
+        if (!cancelled) setRoadmap(result.roadmap);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setRoadmap(null);
+          setError(err instanceof Error ? err.message : "Unable to generate your learning roadmap.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId]);
+
+  if (loading) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+        <LoaderCircle size={14} className="animate-spin" /> Generating your interview learning plan…
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-[var(--color-danger)]">{error}</p>
+        <Button size="sm" variant="outline" onClick={() => void load()}>
+          <RefreshCw size={13} /> Retry roadmap generation
+        </Button>
+      </div>
+    );
+  }
+
+  if (!roadmap) return null;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="text-sm font-semibold text-[var(--color-text)]">{roadmap.title}</h4>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">{roadmap.summary}</p>
+      </div>
+      <ol className="space-y-4">
+        {roadmap.steps.map((step) => (
+          <li
+            key={`${step.order}-${step.topic}`}
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4"
+          >
+            <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-faint)]">
+              Step {step.order}
+            </p>
+            <h5 className="mt-1 text-sm font-semibold text-[var(--color-text)]">{step.topic}</h5>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">{step.rationale}</p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--color-text-muted)]">
+              {step.actions.map((action, index) => (
+                <li key={`${step.order}-action-${index}`}>{action}</li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-[var(--color-text)]">
+              <span className="font-medium">Practice:</span> {step.practice}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function learningSkillList(app: ApplicationRoadmap) {
   if (app.learningSkills?.length) return app.learningSkills;
   return app.skills;
 }
 
 function RoadmapApplicationCard({ app }: { app: ApplicationRoadmap }) {
-  const scoreLine =
-    app.quizScore != null
+  const interviewFailed = app.interviewFailed === true;
+  const scoreLine = interviewFailed
+    ? `${app.interviewScore ?? "—"}% / ${app.interviewPassThreshold ?? 60}%`
+    : app.quizScore != null
       ? `${app.quizScore}% / ${app.quizPassThreshold}%`
       : `— / ${app.quizPassThreshold}%`;
 
@@ -130,7 +242,10 @@ function RoadmapApplicationCard({ app }: { app: ApplicationRoadmap }) {
           <p className="text-sm text-[var(--color-text-muted)]">{app.companyName}</p>
         )}
         <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-          Assessment: <span className="font-medium text-[var(--color-danger)]">Failed</span>
+          {interviewFailed ? "Interview" : "Assessment"}:{" "}
+          <span className="font-medium text-[var(--color-danger)]">
+            {interviewFailed ? "Below threshold" : "Failed"}
+          </span>
           <span className="mx-2 text-[var(--color-text-faint)]">·</span>
           {scoreLine}
         </p>
@@ -138,7 +253,9 @@ function RoadmapApplicationCard({ app }: { app: ApplicationRoadmap }) {
 
       <p className="text-sm text-[var(--color-text-muted)]">{app.intro}</p>
 
-      {app.noJobSkills ? (
+      {interviewFailed ? (
+        <InterviewRoadmapPanel applicationId={app.applicationId} />
+      ) : app.noJobSkills ? (
         <p className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-3 text-sm text-[var(--color-text-muted)]">
           The recruiter has not listed required skills for this job yet.
         </p>

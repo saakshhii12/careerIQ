@@ -116,7 +116,7 @@ async function generateInterviewQuestions(context) {
   const questions = extractJson(text, "array");
 
   if (!validateInterviewQuestionList(questions)) {
-    throw new Error("Qwen returned an invalid interview question list.");
+    throw new Error("AI model returned an invalid interview question list.");
   }
 
   return questions.map((question) => question.trim());
@@ -590,7 +590,7 @@ router.post("/sessions/:sessionId/complete", requireAuth, requireRole("student")
     const evaluation = extractJson(text, "object");
 
     if (!validateFinalEvaluationObject(evaluation)) {
-      throw new Error("Qwen returned an invalid final evaluation.");
+      throw new Error("AI model returned an invalid final evaluation.");
     }
 
     await query("DELETE FROM interview_evaluation WHERE session_id = $1", [session.session_id]);

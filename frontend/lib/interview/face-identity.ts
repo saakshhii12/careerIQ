@@ -1,4 +1,6 @@
-import { FaceDetector, FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+// @mediapipe/tasks-vision is loaded lazily inside getVision() so it is
+// excluded from the initial bundle and only downloaded during an interview.
+type MediapipeTasks = typeof import("@mediapipe/tasks-vision");
 
 const MODEL_ROOT = "https://storage.googleapis.com/mediapipe-models";
 
@@ -7,14 +9,16 @@ const DESCRIPTOR_INDEXES = [
   1, 4, 6, 10, 33, 61, 70, 105, 107, 133, 136, 152, 168, 172, 199, 263, 290, 300, 334, 336, 362, 397,
 ];
 
-let visionPromise: Promise<Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>> | null = null;
-let detectorPromise: Promise<FaceDetector> | null = null;
-let landmarkerPromise: Promise<FaceLandmarker> | null = null;
+let visionPromise: Promise<Awaited<ReturnType<MediapipeTasks["FilesetResolver"]["forVisionTasks"]>>> | null = null;
+let detectorPromise: Promise<MediapipeTasks["FaceDetector"]["prototype"]> | null = null;
+let landmarkerPromise: Promise<MediapipeTasks["FaceLandmarker"]["prototype"]> | null = null;
 
 async function getVision() {
   if (!visionPromise) {
-    visionPromise = FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
+    visionPromise = import("@mediapipe/tasks-vision").then(({ FilesetResolver }) =>
+      FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
+      )
     );
   }
   return visionPromise;
@@ -22,13 +26,14 @@ async function getVision() {
 
 async function getFaceDetector() {
   if (!detectorPromise) {
-    detectorPromise = getVision().then((vision) =>
-      FaceDetector.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: `${MODEL_ROOT}/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
-        },
-        runningMode: "IMAGE",
-      })
+    detectorPromise = Promise.all([getVision(), import("@mediapipe/tasks-vision")]).then(
+      ([vision, { FaceDetector }]) =>
+        FaceDetector.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: `${MODEL_ROOT}/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`,
+          },
+          runningMode: "IMAGE",
+        })
     );
   }
   return detectorPromise;
@@ -36,14 +41,15 @@ async function getFaceDetector() {
 
 async function getFaceLandmarker() {
   if (!landmarkerPromise) {
-    landmarkerPromise = getVision().then((vision) =>
-      FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: `${MODEL_ROOT}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-        },
-        runningMode: "IMAGE",
-        numFaces: 2,
-      })
+    landmarkerPromise = Promise.all([getVision(), import("@mediapipe/tasks-vision")]).then(
+      ([vision, { FaceLandmarker }]) =>
+        FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: `${MODEL_ROOT}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+          },
+          runningMode: "IMAGE",
+          numFaces: 2,
+        })
     );
   }
   return landmarkerPromise;

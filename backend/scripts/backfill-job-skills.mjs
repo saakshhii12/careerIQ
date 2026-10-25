@@ -4,7 +4,7 @@
  * Usage:
  *   node scripts/backfill-job-skills.mjs              # only jobs with zero job_skills
  *   node scripts/backfill-job-skills.mjs --sync       # align all jobs to inferred skills (removes stray links)
- *   node scripts/backfill-job-skills.mjs --sync --qwen # use Qwen when inference is empty
+ *   node scripts/backfill-job-skills.mjs --sync --qwen # use the configured AI model when inference is empty
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";

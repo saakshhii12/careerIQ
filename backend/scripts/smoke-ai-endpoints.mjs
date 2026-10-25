@@ -2,8 +2,8 @@
  * Smoke check for legacy AI-Interviewer endpoints (see routes/legacy-interviewer.js).
  *
  * These routes are shared with the standalone AI-Interviewer client, so they
- * must keep working after refactors. With an invalid HF_TOKEN they are expected
- * to answer 503 with the mapped credential message rather than a raw provider
+ * must keep working after refactors. Without GEMINI_API_KEY they are expected
+ * to answer 503 with the mapped configuration message rather than a raw provider
  * payload or an unhandled 500.
  *
  * Usage: node scripts/smoke-ai-endpoints.mjs

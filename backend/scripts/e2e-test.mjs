@@ -305,7 +305,7 @@ try {
     check("assistant turn persisted to chatbot_messages", stored.rows[0].n >= 2, stored.rows[0]);
   } else {
     console.log(
-      `  SKIP  assistant reply (Hugging Face returned ${assistantReply.status}: ${
+      `  SKIP  assistant reply (AI provider returned ${assistantReply.status}: ${
         assistantReply.body.error ?? ""
       })`
     );

@@ -35,7 +35,7 @@ router.post("/evaluate", async (req, res) => {
     const evaluation = extractJson(text, "object");
     return res.json(evaluation);
   } catch (error) {
-    console.error("Qwen Evaluation Error:", error.message);
+    console.error("AI Evaluation Error:", error.message);
     return res.status(error.status || 500).json({
       score: 0,
       feedback: "Unable to evaluate the answer at the moment.",
@@ -55,12 +55,12 @@ router.post("/generate-questions", async (req, res) => {
     const questions = extractJson(text, "array");
 
     if (!validateInterviewQuestionList(questions)) {
-      throw new Error("Qwen returned an invalid question list.");
+      throw new Error("AI model returned an invalid question list.");
     }
 
     return res.json({ questions: questions.map((question) => question.trim()) });
   } catch (error) {
-    console.error("Qwen Question Generation Error:", error.message);
+    console.error("AI Question Generation Error:", error.message);
     return res.status(error.status || 500).json({ error: errorMessage(error) });
   }
 });
@@ -109,7 +109,7 @@ router.post("/final-evaluation", async (req, res) => {
     const evaluation = extractJson(text, "object");
 
     if (!validateFinalEvaluationObject(evaluation)) {
-      throw new Error("Qwen returned an invalid final evaluation.");
+      throw new Error("AI model returned an invalid final evaluation.");
     }
     return res.json(evaluation);
   } catch (error) {

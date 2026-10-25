@@ -129,7 +129,7 @@ Return ONLY a JSON array of strings. No explanation.`;
         );
       }
     } catch (error) {
-      console.warn(`Qwen skill extract skipped for job ${job.job_id}:`, error.message);
+      console.warn(`AI skill extract skipped for job ${job.job_id}:`, error.message);
     }
   }
 

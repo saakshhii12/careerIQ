@@ -171,7 +171,7 @@ try {
       assert("course has url", Boolean(courses.body.courses[0].url), courses.body.courses[0]);
       console.log("  sample course:", courses.body.courses[0].title, courses.body.courses[0].url);
     } else {
-      console.log("  WARN no courses returned (Serper/Qwen may have filtered all)");
+      console.log("  WARN no courses returned (Serper/AI ranking may have filtered all)");
     }
   } else {
     console.log("  INFO gapUndetermined or no skills — courses step skipped");

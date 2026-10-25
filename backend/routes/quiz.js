@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { query, dbErrorDetails } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
-import { callQwenAPI, extractJson, errorMessage } from "../services/qwen.js";
+import { callQwenAPI, errorMessage } from "../services/qwen.js";
 import { createNotification, notifyRecruitersForApplication } from "../services/notifications.js";
 import { getStudentId } from "./candidate.js";
 import { QUIZ_PASS_THRESHOLD } from "../services/pipeline.js";
@@ -9,6 +9,33 @@ import { QUIZ_PASS_THRESHOLD } from "../services/pipeline.js";
 const router = Router();
 const PASS_THRESHOLD = QUIZ_PASS_THRESHOLD;
 const QUESTION_COUNT = 10;
+const QUIZ_RESPONSE_FORMAT = {
+  type: "json_schema",
+  json_schema: {
+    name: "screening_quiz",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              question: { type: "string" },
+              options: { type: "array", items: { type: "string" } },
+              correctIndex: { type: "integer" },
+            },
+            required: ["question", "options", "correctIndex"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["questions"],
+      additionalProperties: false,
+    },
+  },
+};
 
 async function loadApplicationForStudent(applicationId, studentId) {
   const result = await query(
@@ -32,38 +59,58 @@ Rules:
 - Questions must test knowledge relevant to this job.
 - Each question must have exactly 4 options.
 - Include one clearly correct answer per question.
-- Return ONLY valid JSON array.
+- Return ONLY a valid JSON object with a "questions" array.
 - No markdown.
 
 Return ONLY this format:
-[
-  {
-    "question": "Question text?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctIndex": 0
+{
+  "questions": [
+    {
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 0
+    }
+  ]
+}`;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const text = await callQwenAPI(prompt, 1200, { responseFormat: QUIZ_RESPONSE_FORMAT });
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      if (attempt === 0) continue;
+      throw new Error("AI model returned invalid quiz JSON after retry.");
+    }
+
+    const questions = result?.questions;
+    if (
+      Array.isArray(questions) &&
+      questions.length === QUESTION_COUNT &&
+      questions.every(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          !Array.isArray(item) &&
+          typeof item.question === "string" &&
+          item.question.trim().length > 0 &&
+          Array.isArray(item.options) &&
+          item.options.length === 4 &&
+          item.options.every((option) => typeof option === "string" && option.trim().length > 0) &&
+          Number.isInteger(item.correctIndex) &&
+          item.correctIndex >= 0 &&
+          item.correctIndex <= 3
+      )
+    ) {
+      return questions;
+    }
+
+    if (attempt === 1) {
+      throw new Error("AI model returned an invalid quiz question set after retry.");
+    }
   }
-]`;
 
-  const text = await callQwenAPI(prompt, 1200);
-  const questions = extractJson(text, "array");
-
-  if (
-    !Array.isArray(questions) ||
-    questions.length !== QUESTION_COUNT ||
-    questions.some(
-      (item) =>
-        !item.question ||
-        !Array.isArray(item.options) ||
-        item.options.length !== 4 ||
-        typeof item.correctIndex !== "number" ||
-        item.correctIndex < 0 ||
-        item.correctIndex > 3
-    )
-  ) {
-    throw new Error("Qwen returned an invalid quiz question set.");
-  }
-
-  return questions;
+  throw new Error("Unable to generate quiz questions.");
 }
 
 router.post("/start", requireAuth, requireRole("student"), async (req, res) => {
@@ -105,7 +152,13 @@ router.post("/start", requireAuth, requireRole("student"), async (req, res) => {
          ORDER BY question_order`,
         [attemptId]
       );
-      return res.json({ attemptId, questions: questions.rows, resumed: true });
+      const normalized = questions.rows.map((q) => ({
+        ...q,
+        question_id: Number(q.question_id),
+        question_order: Number(q.question_order),
+        options: typeof q.options === "string" ? JSON.parse(q.options) : q.options,
+      }));
+      return res.json({ attemptId: Number(attemptId), questions: normalized, resumed: true });
     }
 
     const generated = await generateQuizQuestions(application.job_title, application.description);
@@ -126,12 +179,18 @@ router.post("/start", requireAuth, requireRole("student"), async (req, res) => {
          RETURNING question_id, question_text, options, question_order`,
         [attemptId, item.question.trim(), JSON.stringify(item.options), item.correctIndex, index + 1]
       );
-      storedQuestions.push(insert.rows[0]);
+      const row = insert.rows[0];
+      storedQuestions.push({
+        ...row,
+        question_id: Number(row.question_id),
+        question_order: Number(row.question_order),
+        options: typeof row.options === "string" ? JSON.parse(row.options) : row.options,
+      });
     }
 
     await query("UPDATE applications SET quiz_status = 'In Progress' WHERE application_id = $1", [applicationId]);
 
-    return res.status(201).json({ attemptId, questions: storedQuestions, resumed: false });
+    return res.status(201).json({ attemptId: Number(attemptId), questions: storedQuestions, resumed: false });
   } catch (error) {
     console.error("Quiz start error:", dbErrorDetails(error));
     return res.status(error.status || 500).json({ error: errorMessage(error) });
@@ -168,20 +227,50 @@ router.post("/submit", requireAuth, requireRole("student"), async (req, res) => 
       "SELECT question_id, correct_option_index FROM quiz_questions WHERE attempt_id = $1",
       [attemptId]
     );
-    const questionMap = new Map(questions.rows.map((row) => [row.question_id, row.correct_option_index]));
+
+    if (questions.rows.length === 0) {
+      return res.status(400).json({ error: "No questions found for this quiz attempt." });
+    }
+
+    // Map by both string and numeric question_id to guard against any representation mismatches
+    const questionMap = new Map();
+    for (const row of questions.rows) {
+      const qid = String(row.question_id);
+      const cIdx = Number(row.correct_option_index);
+      questionMap.set(qid, cIdx);
+      questionMap.set(Number(qid), cIdx);
+    }
 
     let correctCount = 0;
     for (const answer of answers) {
-      const correctIndex = questionMap.get(answer.questionId);
+      const rawQid = answer.questionId ?? answer.question_id;
+      if (rawQid === undefined || rawQid === null) continue;
+
+      const correctIndex =
+        questionMap.get(rawQid) ??
+        questionMap.get(String(rawQid)) ??
+        questionMap.get(Number(rawQid));
+
       if (correctIndex === undefined) continue;
-      const isCorrect = Number(answer.selectedOptionIndex) === Number(correctIndex);
+
+      const rawSelected =
+        answer.selectedOptionIndex ??
+        answer.selected_option_index ??
+        answer.selectedOption;
+      if (rawSelected === undefined || rawSelected === null) continue;
+
+      const selectedIndex = Number(rawSelected);
+      const isCorrect = selectedIndex === Number(correctIndex);
       if (isCorrect) correctCount += 1;
 
+      const numericQid = Number(rawQid);
       await query(
         `INSERT INTO quiz_answers (attempt_id, question_id, selected_option_index, is_correct)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT DO NOTHING`,
-        [attemptId, answer.questionId, answer.selectedOptionIndex, isCorrect]
+         ON CONFLICT (attempt_id, question_id) DO UPDATE
+         SET selected_option_index = EXCLUDED.selected_option_index,
+             is_correct = EXCLUDED.is_correct`,
+        [attemptId, numericQid, selectedIndex, isCorrect]
       );
     }
 

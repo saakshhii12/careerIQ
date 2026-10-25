@@ -19,8 +19,8 @@ cd backend && node server.js
 cd AI-Interviewer && npm install && npm run dev
 ```
 
-Requires the same `backend/.env` (`HF_TOKEN`, etc.) as the main app.
+Requires the same `backend/.env` (`GEMINI_API_KEY`, etc.) as the main app.
 
 ## Removed / unused
 
-- **Google Gemini** — `geminiService.js` was removed; the app never imported it. All LLM calls go through the backend Qwen service.
+- **Google Gemini** — all LLM calls go through the backend's shared AI adapter.

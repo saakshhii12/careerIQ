@@ -1,6 +1,7 @@
 /**
  * Shared LLM prompt templates for CareerIQ.
- * All production and legacy routes call Qwen through backend/services/qwen.js.
+ * All production and legacy routes call the configured AI provider through
+ * backend/services/qwen.js.
  */
 
 export function buildResumeParsePrompt(resumeText) {

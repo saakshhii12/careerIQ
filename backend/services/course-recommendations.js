@@ -104,7 +104,7 @@ Rules:
     }
     return courses;
   } catch (error) {
-    console.warn("Qwen course ranking failed, using search order:", error.message);
+    console.warn("AI course ranking failed, using search order:", error.message);
     return searchResults.slice(0, 5).map((hit) => {
       const free = inferFreeLabel(hit.title, hit.snippet, hit.url);
       return {

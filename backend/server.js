@@ -22,8 +22,8 @@ import { query } from "./db.js";
 // Load secrets from the backend directory, regardless of where Node is started.
 dotenv.config({ path: fileURLToPath(new URL(".env", import.meta.url)) });
 
-// Safe diagnostic only — never log the token value.
-console.log("HF_TOKEN present:", Boolean(process.env.HF_TOKEN));
+// Safe diagnostic only — never log the API key value.
+console.log("GEMINI_API_KEY configured:", Boolean(process.env.GEMINI_API_KEY));
 
 const databaseUrl = process.env.DATABASE_URL;
 const db = new Pool({
@@ -59,7 +59,7 @@ app.get("/api/health", (_req, res) => {
     model: ai.model,
     provider: ai.provider,
     voiceServiceConfigured: Boolean(process.env.ELEVENLABS_API_KEY),
-    hfTokenPresent: ai.hfTokenConfigured,
+    geminiApiKeyPresent: ai.apiKeyConfigured,
   });
 });
 
@@ -116,7 +116,7 @@ app.use("/api", legacyInterviewerRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
-  console.log(`Qwen evaluation server running on http://localhost:${PORT}`);
+  console.log(`CareerIQ API server running on http://localhost:${PORT}`);
   try {
     await ensureAdminAccount();
     await syncRejectedOutcomes(query);

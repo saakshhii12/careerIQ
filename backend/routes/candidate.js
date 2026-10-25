@@ -13,6 +13,7 @@ import { computeJobMatch } from "../services/matching.js";
 import {
   assertApplicationQuizFailed,
   assertSkillRequiredForJob,
+  generateInterviewLearningRoadmap,
   listFailedQuizSkillGaps,
 } from "../services/skill-gap.js";
 import { QUIZ_PASS_THRESHOLD } from "../services/pipeline.js";
@@ -490,6 +491,34 @@ router.get("/skill-gaps", requireAuth, requireRole("student"), async (req, res) 
     return res.status(error.status || 500).json({ error: error.message || "Unable to load skill gaps." });
   }
 });
+
+router.post(
+  "/skill-gaps/:applicationId/interview-roadmap",
+  requireAuth,
+  requireRole("student"),
+  async (req, res) => {
+    try {
+      const studentId = await getStudentId(req.user.userId);
+      if (!studentId) return res.status(404).json({ error: "Student profile not found." });
+
+      const applicationId = Number(req.params.applicationId);
+      if (!Number.isInteger(applicationId) || applicationId <= 0) {
+        return res.status(400).json({ error: "Invalid applicationId." });
+      }
+
+      const result = await generateInterviewLearningRoadmap(studentId, applicationId);
+      return res.json(result);
+    } catch (error) {
+      console.error("Interview roadmap generation failed:", {
+        status: error.status,
+        message: error.message,
+      });
+      return res.status(error.status || 500).json({
+        error: errorMessage(error) || "Unable to generate a learning roadmap. Please retry.",
+      });
+    }
+  }
+);
 
 router.get("/skill-courses", requireAuth, requireRole("student"), async (req, res) => {
   try {

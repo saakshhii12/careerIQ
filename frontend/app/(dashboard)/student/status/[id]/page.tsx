@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useEffect } from "react";
+import { use, useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -47,14 +47,22 @@ function QuizModal({ applicationId, onClose, onPassed }: QuizModalProps) {
   const [result, setResult] = useState<{ score: number; passed: boolean; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const quizLoadStarted = useRef(false);
 
   // Load quiz on mount
   const loadQuiz = useCallback(async () => {
     setError(null);
     try {
       const data = await startQuiz(applicationId);
-      setAttemptId(data.attemptId);
-      setQuestions(data.questions);
+      setAttemptId(Number(data.attemptId));
+      setQuestions(
+        data.questions.map((q) => ({
+          ...q,
+          question_id: Number(q.question_id),
+          question_order: Number(q.question_order),
+        }))
+      );
+      setError(null);
       setPhase("quiz");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load quiz.");
@@ -63,7 +71,11 @@ function QuizModal({ applicationId, onClose, onPassed }: QuizModalProps) {
   }, [applicationId]);
 
   // Auto-load on mount
-  useEffect(() => { loadQuiz(); }, [loadQuiz]);
+  useEffect(() => {
+    if (quizLoadStarted.current) return;
+    quizLoadStarted.current = true;
+    loadQuiz();
+  }, [loadQuiz]);
 
 
   async function handleSubmit() {
@@ -72,8 +84,8 @@ function QuizModal({ applicationId, onClose, onPassed }: QuizModalProps) {
     setError(null);
     try {
       const answers: QuizAnswer[] = questions.map((q) => ({
-        questionId: q.question_id,
-        selectedOptionIndex: selected[q.question_id] ?? 0,
+        questionId: Number(q.question_id),
+        selectedOptionIndex: Number(selected[q.question_id] ?? 0),
       }));
       const data = await submitQuiz(attemptId, answers);
       setResult({ score: data.score, passed: data.passed, message: data.message });
