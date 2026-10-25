@@ -13,17 +13,17 @@ Campus recruitment platform with AI-assisted screening: resume parsing, job matc
 
 ## AI architecture (as implemented)
 
-All server-side LLM features use one adapter and the Google Gemini API:
+All server-side LLM features use one adapter and Groq's OpenAI-compatible Chat Completions API:
 
 ```
 Client (Next.js)
     → Backend route
     → backend/services/qwen.js
-    → Gemini generateContent API (built-in fetch)
-    → Model (default: gemini-3.8-flash)
+    → Groq Chat Completions API (https://api.groq.com/openai/v1/chat/completions)
+    → Model (default: openai/gpt-oss-20b)
 ```
 
-### LLM (Gemini)
+### LLM (Groq)
 
 | Feature | Production endpoint | Service |
 |---------|---------------------|---------|
@@ -37,12 +37,7 @@ Client (Next.js)
 
 Shared prompts live in `backend/services/ai-prompts.js`.
 
-The [Google AI Studio free tier](https://ai.google.dev/gemini-api/docs/pricing)
-currently includes free input and output tokens for supported models, but quotas
-and availability vary and are not guaranteed. Google's
-[free-tier terms](https://ai.google.dev/gemini-api/terms) say submitted content
-may be used to improve its products; review those terms before sending candidate
-resumes or profile data.
+For details on supported models, rate limits, and service terms, refer to the [Groq Documentation](https://console.groq.com/docs) and [Groq Terms of Service](https://groq.com/terms-of-service/).
 
 **Legacy endpoints** (used only by `AI-Interviewer/` and smoke tests):  
 `POST /api/generate-questions`, `/api/parse-resume`, `/api/final-evaluation`, `/api/chat`, `/api/evaluate` — implemented in `backend/routes/legacy-interviewer.js`.
@@ -74,21 +69,21 @@ resumes or profile data.
 
 Configure in `backend/.env` (never commit). Placeholders only in `backend/.env.example`:
 
-Create a Gemini API key in [Google AI Studio](https://aistudio.google.com/api-keys)
-and set `GEMINI_API_KEY` in `backend/.env`. Keep the key on the backend; never put
+Generate an API key in the [Groq Console](https://console.groq.com/keys)
+and set `GROQ_API_KEY` in `backend/.env`. Keep the key on the backend; never put
 it in a frontend environment variable.
 
 | Variable | Purpose |
 |----------|---------|
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `GEMINI_MODEL` | Model id (default `gemini-3.8-flash`) |
+| `GROQ_API_KEY` | Groq API key |
+| `GROQ_MODEL` | Optional model id (default `openai/gpt-oss-20b`) |
 | `ELEVENLABS_API_KEY` | ElevenLabs Scribe realtime STT |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Auth signing |
 | `IDENTITY_MATCH_THRESHOLD` | Optional identity match threshold |
 | `IDENTITY_LIVENESS_MIN_DELTA` | Optional liveness delta |
 
-Frontend uses `NEXT_PUBLIC_BACKEND_URL` only — **no** Gemini or ElevenLabs secrets in the browser.
+Frontend uses `NEXT_PUBLIC_BACKEND_URL` only — **no** Groq or ElevenLabs secrets in the browser.
 
 ## Local development
 
@@ -100,17 +95,17 @@ cd backend && npm install && node server.js
 cd frontend && npm install && npm run dev
 ```
 
-Health check: `GET http://localhost:5000/api/health` — reports the configured model, provider, and whether `GEMINI_API_KEY` is present.
+Health check: `GET http://localhost:5000/api/health` — reports `provider` (`"Groq"`), `model` (`"openai/gpt-oss-20b"`), and `geminiApiKeyPresent` (a legacy property name that evaluates whether `GROQ_API_KEY` is configured).
 
 Test provider connectivity without printing the API key:
 
 ```bash
 cd backend
-node scripts/diagnose-gemini.mjs
+node scripts/diagnose-groq.mjs
 ```
 
 ## Student hiring flow (production)
 
-Profile resume (PDF) → apply to job → skill match → quiz (≥60% pass) → identity verification → AI interview (Gemini questions + ElevenLabs STT + integrity monitoring) → Gemini final evaluation → PostgreSQL → dashboards.
+Profile resume (PDF) → apply to job → skill match → quiz (≥60% pass) → identity verification → AI interview (Groq-generated questions + ElevenLabs STT + integrity monitoring) → Groq final evaluation → PostgreSQL → dashboards.
 
 Resume is **not** re-uploaded inside the interview; the session uses the profile resume already stored for the student.
